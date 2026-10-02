@@ -1,0 +1,291 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap");
+
+:root {
+  --bg: #f6f6f7;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --ink: #111111;
+  --ink-2: #3d3d3d;
+  --muted: #8b8b8b;
+  --line: #ebebeb;
+  --line-strong: #e0e0e0;
+  --accent: #ff4d00;
+  --accent-soft: #fff3ee;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  margin: 0;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  letter-spacing: -0.01em;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.allow-select {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* ——— Surfaces ——— */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-elevated {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* ——— Buttons ——— */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  min-height: 48px;
+  padding: 0 22px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 77, 0, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+  opacity: 0.95;
+}
+
+.btn-primary:disabled {
+  background: #d4d4d4;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  min-height: 48px;
+  padding: 0 20px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius-pill);
+  min-height: 44px;
+  padding: 0 14px;
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+/* ——— Inputs ——— */
+.input-field {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--ink);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-field:focus {
+  border-color: #c8c8c8;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.04);
+}
+
+.input-field::placeholder {
+  color: #b4b4b4;
+}
+
+/* ——— Pills / chips ——— */
+.pill {
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* ——— Bottom navigation ——— */
+.bottom-nav {
+  position: fixed;
+  bottom: calc(14px + var(--safe-bottom));
+  left: 14px;
+  right: 14px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  padding: 0 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 52px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  letter-spacing: 0;
+}
+
+.nav-item.active {
+  color: var(--ink);
+}
+
+.nav-center {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  flex-shrink: 0;
+  margin: 0 6px;
+  box-shadow: 0 8px 24px rgba(255, 77, 0, 0.38);
+  cursor: pointer;
+}
+
+/* ——— Layout helpers ——— */
+.pb-nav {
+  padding-bottom: calc(104px + var(--safe-bottom));
+}
+
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(246, 246, 247, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  padding-left: 20px;
+  padding-right: 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0 2px;
+}
+
+/* ——— Skeleton ——— */
+.skeleton {
+  background: linear-gradient(90deg, #ececec 0%, #f5f5f5 50%, #ececec 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
