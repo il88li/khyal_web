@@ -49,8 +49,9 @@ export default function Settings() {
   const setR = (v: boolean) => { setReduce(v); localStorage.setItem("khiyal:reduce", v ? "1" : "0"); window.dispatchEvent(new Event("khiyal:reduce")); };
   const out = async () => { await sb.auth.signOut(); router.replace("/auth"); router.refresh(); };
   const ACC: [string, string][] = [["برتقالي", "255 79 0"], ["أزرق", "44 112 221"], ["أخضر", "36 178 109"], ["بنفسجي", "124 58 237"], ["وردي", "236 72 153"], ["فحمي", "34 34 34"]];
-  const [acc, setAcc] = useState("255 79 0"), [hap, setHap] = useState(true), [pw, setPw] = useState("");
-  useEffect(() => { setAcc(localStorage.getItem("khiyal:accent") || "255 79 0"); setHap(localStorage.getItem("khiyal:haptics") !== "0"); }, []);
+  const [acc, setAcc] = useState("255 79 0"), [hap, setHap] = useState(true), [pw, setPw] = useState(""), [theme, setTheme] = useState("sys");
+  useEffect(() => { setAcc(localStorage.getItem("khiyal:accent") || "255 79 0"); setHap(localStorage.getItem("khiyal:haptics") !== "0"); setTheme(localStorage.getItem("khiyal:theme") || "sys"); }, []);
+  const pickTheme = (v: string) => { setTheme(v); localStorage.setItem("khiyal:theme", v); document.documentElement.classList.toggle("dark", v === "dark" || (v === "sys" && matchMedia("(prefers-color-scheme: dark)").matches)); };
   const pickAcc = (v: string) => { setAcc(v); localStorage.setItem("khiyal:accent", v); document.documentElement.style.setProperty("--brand", v); };
   const [blocks, setBlocks] = useState<{ blocked_id: string; profile: { display_name: string | null; username: string | null } | null }[]>([]);
   useEffect(() => { uid().then(async (id) => { if (!id) return; const { data } = await sb.from("blocks").select("blocked_id,profile:profiles!blocked_id(display_name,username)").eq("blocker_id", id); setBlocks((data as any) ?? []); }); }, []);
@@ -107,7 +108,12 @@ export default function Settings() {
       </section>
       <section className="flex flex-col gap-3 rounded-xl border border-silver bg-snow p-4 shadow-soft">
         <h2 className="text-lg font-semibold">المظهر والتفاعل</h2>
-        <p className="text-caption text-smoke">لون التطبيق</p>
+        <p className="text-caption text-smoke">المظهر</p>
+        <div className="flex gap-2">
+          {([["sys", "يتابع النظام"], ["light", "فاتح"], ["dark", "داكن"]] as const).map(([v, l]) => (
+            <button key={v} onClick={() => pickTheme(v)} className={`min-h-11 flex-1 rounded-full border px-3 text-sm font-medium ${theme === v ? "border-brand bg-brand text-snow" : "border-silver bg-snow text-graphite"}`}>{l}</button>))}
+        </div>
+        <p className="pt-2 text-caption text-smoke">لون التطبيق</p>
         <div className="flex gap-3 overflow-x-auto p-1 [scrollbar-width:none]">{ACC.map(([n, v]) => <button key={v} onClick={() => pickAcc(v)} aria-label={n} className={`h-10 w-10 shrink-0 rounded-full border-2 shadow-soft ${acc === v ? "border-charcoal" : "border-snow"}`} style={{ background: `rgb(${v})` }} />)}</div>
         <Switch on={hap} set={pickHap} label="الاهتزاز عند التفاعل" />
       </section>

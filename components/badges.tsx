@@ -47,6 +47,20 @@ export async function badgeStats(pid: string): Promise<BStats | null> {
   } catch { return null; }
 }
 
+/** المستوى: كل100 نقطة تأثير مستوى (بحد أقصى9) — يظهر في بطاقة الهوية */
+export const levelOf = (s: BStats) => Math.min(9, 1 + Math.floor(score(s) / 100));
+
+/** الخطوة التالية الشخصية: أقصر مسار لإنجاز جديد (تُعرض في الملف الشخصي) */
+export function nextStep(s: BStats): string {
+  if (!s.prompts) return "خطوتك التالية: انشر أول برومبت — يستغرق دقيقة واحدة";
+  if (!s.best) return "خطوتك التالية: عُد غدًا وابدأ سلسلتك الأولى";
+  if (s.best < 5) return `خطوتك التالية: وصّل السلسلة إلى5 أيام (${s.best}/5)`;
+  if (s.likes < 25) return `خطوتك التالية: اجمع25 إعجاباً (${s.likes}/25)`;
+  if (s.followers < 10) return `خطوتك التالية: ادعُ10 متابعين لصفحتك (${s.followers}/10)`;
+  if (s.taught < 10) return `خطوتك التالية: ساعد10 مبتدئين بالتعليقات (${s.taught}/10)`;
+  return "خطوتك التالية: شارك في تحدي الأسبوع واعثر على جمهورك";
+}
+
 /** محفظة كاملة مع تقدّم كل شارة (صفحة الإحصاءات) */
 export function BadgeGrid({ s }: { s: BStats }) {
   const won = BADGES.filter((b) => b.val(s) >= b.goal).length;

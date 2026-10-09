@@ -80,6 +80,7 @@ export default function PromptCard({ p }: { p: PromptRow }) {
   if (gone) return null;
   const first = p.images?.[0], ratio = first ? Math.min(Math.max(first.w / first.h, 0.8), 1.91) : 1;
   const name = p.author?.display_name ?? p.author?.username ?? "مستخدم", cat = p.category_id != null ? cats[p.category_id] : null;
+  const hot = p.like_count >= 50, fresh = Date.now() - new Date(p.created_at).getTime() < 86_400_000, trusted = (p.copy_count ?? 0) >= 10; // شارات الحالة
 
   return (
     <motion.article initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -90,7 +91,7 @@ export default function PromptCard({ p }: { p: PromptRow }) {
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{name}</p>
-          <p className="flex items-center gap-1.5 text-caption text-smoke"><span>{ago(p.created_at)}</span>{cat && <span className="rounded-full bg-brand/10 px-2 text-brand">{cat}</span>}</p>
+          <p className="flex items-center gap-1.5 text-caption text-smoke"><span>{ago(p.created_at)}</span>{cat && <span className="rounded-full bg-brand/10 px-2 text-brand">{cat}</span>}{hot && <span className="rounded-full bg-brand px-2 text-snow">ترند</span>}{fresh && <span className="rounded-full bg-mist px-2 text-graphite">جديد</span>}{trusted && <span className="rounded-full bg-mist px-2 text-graphite">موثّق</span>}</p>
         </div>
         {mine ? <><button onClick={() => { setDraft(shown); setEdit(true); }} aria-label="تعديل" className={iconBtn}><Pencil size={17} /></button><button onClick={del} aria-label="حذف" className={iconBtn}><Trash2 size={17} /></button></>
           : <button onClick={() => p.id !== "preview" && setRep(true)} aria-label="إبلاغ" className={iconBtn}><Flag size={17} /></button>}

@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BarChart3, BookMarked, Camera, Flame, Settings, Share2 } from "lucide-react";
+import { Award, BarChart3, BookMarked, Camera, Flame, Settings, Share2 } from "lucide-react";
 import { VERSION, explain, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
-import { BadgeStrip, badgeStats, type BStats } from "@/components/badges";
+import { BADGES, BadgeStrip, badgeStats, levelOf, nextStep, type BStats } from "@/components/badges";
 
 type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null };
 type Cell = { id: string; body: string; enhanced: string | null; images: { url: string }[] };
@@ -85,6 +85,34 @@ export default function Profile() {
     if (error) { setPend(false); setFol(false); if (!priv) setStats((s) => ({ ...s, followers: s.followers - 1 })); toast("تعذّرت المتابعة"); }
     else if (priv) toast("أُرسل طلب المتابعة");
   }
+  async function shareCard() { // صورة إنجاز أنيقة تُولَّد محلياً ثم تُشارك أو تُنزَّل
+    if (!badges || !p) return;
+    const W = 800, H = 800, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const x = cv.getContext("2d"); if (!x) return;
+    const css = getComputedStyle(document.documentElement), v = (k: string) => css.getPropertyValue(k).trim();
+    const brand = `rgb(${v("--brand")})`, snow = `rgb(${v("--c-snow")})`, fog = `rgb(${v("--c-fog")})`, ink = `rgb(${v("--c-ink")})`, ink3 = `rgb(${v("--c-ink-3")})`;
+    const fam = `"${v("--font-sans").replace(/"/g, "")}", sans-serif`;
+    (x as CanvasRenderingContext2D).direction = "rtl"; x.textAlign = "center";
+    x.fillStyle = fog; x.fillRect(0, 0, W, H);
+    x.strokeStyle = brand; x.lineWidth = 6; x.strokeRect(20, 20, W - 40, H - 40);
+    x.fillStyle = brand; x.beginPath(); x.arc(W / 2, 150, 62, 0, Math.PI * 2); x.fill();
+    x.fillStyle = snow; x.font = `700 62px ${fam}`; x.fillText("✦", W / 2, 172);
+    x.fillStyle = ink; x.font = `700 42px ${fam}`; x.fillText(p.display_name ?? "مبدع خيال", W / 2, 290);
+    x.fillStyle = brand; x.font = `600 28px ${fam}`; x.fillText(`المستوى ${levelOf(badges)} في خيال`, W / 2, 336);
+    const won = BADGES.filter((b) => b.val(badges) >= b.goal).length;
+    x.fillStyle = ink3; x.font = `500 26px ${fam}`;
+    [`برومبتات: ${badges.prompts}`, `إعجابات: ${badges.likes}`, `شارات: ${won} من ${BADGES.length}`].forEach((t, i) => x.fillText(t, W / 2, 420 + i * 48));
+    x.fillStyle = ink; x.font = `700 28px ${fam}`; x.fillText("خيال — برومبتات عربية جاهزة", W / 2, 660);
+    x.fillStyle = brand; x.font = `600 22px ${fam}`; x.fillText("khiyal", W / 2, 700);
+    cv.toBlob(async (b) => {
+      if (!b) return;
+      const f = new File([b], "khiyal-achievement.png", { type: "image/png" });
+      try {
+        if (navigator.canShare?.({ files: [f] })) await navigator.share({ files: [f], title: "إنجازي في خيال" });
+        else { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "khiyal-achievement.png"; a.click(); toast("نُزّلت صورة إنجازك — شاركها أينما شئت"); }
+      } catch { /* أُلغيت المشاركة */ }
+    }, "image/png");
+  }
   function tapVersion() {
     clearTimeout(timer.current); const n = taps + 1; navigator.vibrate?.(6);
     if (n >= 6) { setTaps(0); router.push("/admin"); return; }
@@ -115,13 +143,14 @@ export default function Profile() {
         <div className="relative z-10 -mt-12 flex items-end justify-between px-1">
           <div className="relative h-20 w-20"><div className="h-full w-full overflow-hidden rounded-full border-2 border-snow bg-mist shadow-soft">{p?.avatar_url && <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />}</div>
             {own && <label className="absolute -bottom-1 -left-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-brand text-snow shadow-pop active:scale-95">{up === "avatar_url" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-snow/40 border-t-snow" /> : <Camera size={14} />}<input type="file" accept="image/*" hidden onChange={(e) => change("avatar_url", e.target.files?.[0])} /></label>}</div>
-          <div className="flex items-center gap-1"><button aria-label="مشاركة الحساب" className="btn !px-3" onClick={async () => { const url = `${location.origin}/profile/${pid}`; try { if (navigator.share) await navigator.share({ title: p?.display_name ?? "خيال", url }); else { await navigator.clipboard.writeText(url); toast("نُسخ رابط الحساب"); } } catch {} }}><Share2 size={16} /></button>{!own && <button onClick={block} className="btn">{blocked ? "إلغاء الحظر" : "حظر"}</button>}
+          <div className="flex items-center gap-1"><button aria-label="مشاركة الحساب" className="btn !px-3" onClick={async () => { const url = `${location.origin}/profile/${pid}`; try { if (navigator.share) await navigator.share({ title: p?.display_name ?? "خيال", url }); else { await navigator.clipboard.writeText(url); toast("نُسخ رابط الحساب"); } } catch {} }}><Share2 size={16} /></button>{own && badges && <button aria-label="مشاركة إنجاز" title="شارك صورة إنجازك" onClick={shareCard} className="btn !px-3"><Award size={16} className="text-brand" /></button>}{!own && <button onClick={block} className="btn">{blocked ? "إلغاء الحظر" : "حظر"}</button>}
           {own ? <><Link href="/library" className="btn whitespace-nowrap"><BookMarked size={16} />مكتبتي</Link><Link href="/settings" className="btn btn-primary whitespace-nowrap">تعديل</Link></>
             : <button onClick={follow} className={`min-h-10 rounded-full px-5 text-sm font-medium active:opacity-70 ${fol || pend ? "border border-silver text-charcoal" : "bg-brand text-snow"}`}>{fol ? "أتابعه" : pend ? "تم الطلب" : "متابعة"}</button>}</div>
         </div>
-        <div><h1 className="text-xl font-semibold">{p?.display_name ?? <span className="inline-block h-6 w-32 animate-pulse rounded-full bg-mist" />}</h1><p className="text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>{!!p?.streak && p.streak > 1 && <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-caption font-medium text-brand"><Flame size={13} />{p.streak} أيام متتالية</span>}</div>
+        <div><h1 className="text-xl font-semibold">{p?.display_name ?? <span className="inline-block h-6 w-32 animate-pulse rounded-full bg-mist" />}</h1><p className="text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>{!!p?.streak && p.streak > 1 && <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-caption font-medium text-brand"><Flame size={13} />{p.streak} أيام متتالية</span>}{badges && <span className="mt-1 me-1 inline-flex items-center gap-1 rounded-full bg-mist px-2 py-0.5 text-caption font-semibold text-graphite">المستوى {levelOf(badges)}</span>}</div>
         {p?.bio && <p className="max-w-[65ch] text-sm text-graphite">{p.bio}</p>}
         {!!p?.links?.length && <div className="flex flex-wrap gap-x-4">{p.links.map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer nofollow" dir="ltr" className="flex min-h-10 items-center rounded-link text-sm text-cobalt">{l.replace(/^https?:\/\//, "")}</a>)}</div>}
+        {own && badges && <p className="rounded-xl bg-brand/5 px-3 py-2 text-caption font-medium text-brand">{nextStep(badges)}</p>}
         <dl className="flex gap-8 text-center">{([["prompts", "برومبت"], ["followers", "متابِع"], ["following", "يتابع"]] as const).map(([k, l]) => <div key={k}><dt className="text-lg font-semibold tabular-nums">{stats[k]}</dt><dd className="text-caption text-smoke">{l}</dd></div>)}</dl>
         {!hidden && badges && <BadgeStrip s={badges} own={own} />}
         {own && <Link href="/stats" className="btn btn-soft self-start"><BarChart3 size={16} />إحصاءاتي</Link>}

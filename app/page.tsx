@@ -10,7 +10,7 @@ import { sb, uid, explain } from "@/lib/supabase";
 import Link from "next/link";
 import type { PromptRow } from "@/types";
 
-const TABS = [["foryou", "لك"], ["following", "أتابعه"], ["trending", "رائج"], ["cats", "الفئات"]] as const;
+const TABS = [["foryou", "مختار لك"], ["following", "أتابعه"], ["trending", "رائج"], ["cats", "الفئات"]] as const;
 type Tab = (typeof TABS)[number][0];
 const PAGE = 10;
 const SEL = "id,body,enhanced,model,images,like_count,comment_count,created_at,category_id,author:profiles!author_id(id,username,display_name,avatar_url)";

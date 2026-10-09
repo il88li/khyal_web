@@ -1,6 +1,6 @@
 "use client";
 import { MotionConfig, motion, useScroll } from "framer-motion";
-import { BarChart3, Bell, BookMarked, ChevronRight, Download, FlaskConical, Home, Plus, Search, Settings, ShieldCheck, Sparkles, User, Users } from "lucide-react";
+import { BarChart3, Bell, BookMarked, ChevronRight, Compass, Download, FlaskConical, Home, Plus, Settings, ShieldCheck, Sparkles, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -12,8 +12,18 @@ import { isBare, refreshWebToken, registerToken, sb, uid } from "@/lib/supabase"
 const TITLES: [string, string][] = [["/enhance", "التحسين"], ["/lab", "المختبر"], ["/community", "المجتمع"], ["/safety", "الأمان"], ["/new", "منشور جديد"], ["/notifications", "الإشعارات"], ["/requests", "طلبات المتابعة"], ["/settings", "الإعدادات"], ["/search", "بحث"], ["/library", "مكتبتي"], ["/stats", "إحصاءاتي"], ["/profile", "الحساب"], ["/p/", "برومبت"]];
 
 export function TopBar() {
-  const r = useRouter(), path = usePathname(), [can, setCan] = useState(false);
+  const r = useRouter(), path = usePathname(), [can, setCan] = useState(false), [unread, setUnread] = useState(0);
   const { scrollYProgress } = useScroll();
+  useEffect(() => { // عدّاد غير المقروء (جوال فقط: الشريط العلوي)
+    if (path.startsWith("/auth") || path.startsWith("/admin")) return;
+    let ch: ReturnType<typeof sb.channel> | undefined, dead = false;
+    uid().then((id) => {
+      if (!id || dead) return;
+      const q = async () => { const { count } = await sb.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", id).eq("read", false); setUnread(count ?? 0); };
+      q(); ch = sb.channel("topbar-notif").on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${id}` }, q).subscribe();
+    });
+    return () => { dead = true; if (ch) sb.removeChannel(ch); };
+  }, [path]);
   useEffect(() => {
     const w = window as any, h = () => setCan(!!w.__installPrompt);
     h(); window.addEventListener("khiyal:installable", h); return () => window.removeEventListener("khiyal:installable", h);
@@ -29,7 +39,7 @@ export function TopBar() {
           ? <button onClick={() => r.back()} aria-label="رجوع" className="flex h-10 w-10 items-center justify-center rounded-full active:bg-mist"><ChevronRight size={22} /></button>
           : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-snow"><Sparkles size={18} /></span>}
         <span className="flex-1 truncate px-1 text-base font-semibold">{title}</span>
-        {!path.startsWith("/search") && <Link href="/search" aria-label="بحث" className="flex h-10 w-10 items-center justify-center rounded-full bg-mist text-charcoal active:scale-95"><Search size={18} /></Link>}
+        {!path.startsWith("/notifications") && <Link href="/notifications" aria-label="الإشعارات" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-mist text-charcoal active:scale-95"><Bell size={19} />{unread > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-brand" />}</Link>}
         {can && <button onClick={install} className="flex min-h-10 items-center gap-1 rounded-full bg-brand/10 px-3 text-sm font-medium text-brand"><Download size={16} />تثبيت</button>}
       </div>
     </header>
@@ -40,41 +50,34 @@ export function TopBar() {
 
 const items = [
   { href: "/", icon: Home, label: "الرئيسية" },
-  { href: "/enhance", icon: Sparkles, label: "تحسين" },
-  { href: "/new", icon: Plus, label: "جديد", fab: true },
-  { href: "/notifications", icon: Bell, label: "الإشعارات" },
-  { href: "/profile/me", icon: User, label: "حسابي" },
+  { href: "/search", icon: Compass, label: "استكشف" },
+  { href: "/profile/me", icon: User, label: "ملفي" },
 ];
 
 export function BottomNav() {
-  const path = usePathname(), [unread, setUnread] = useState(0), hidden = path.startsWith("/auth") || path.startsWith("/admin");
-  useEffect(() => {
-    if (hidden) return;
-    let ch: ReturnType<typeof sb.channel> | undefined, dead = false;
-    uid().then((id) => {
-      if (!id || dead) return;
-      const q = async () => { const { count } = await sb.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", id).eq("read", false); setUnread(count ?? 0); };
-      q(); ch = sb.channel("nav-notif").on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${id}` }, q).subscribe();
-    });
-    return () => { dead = true; if (ch) sb.removeChannel(ch); };
-  }, [hidden]);
+  const path = usePathname(), hidden = path.startsWith("/auth") || path.startsWith("/admin") || path.startsWith("/welcome");
   if (hidden) return null;
+  const cell = (i: (typeof items)[number]) => {
+    const active = i.href === "/" ? path === "/" : path.startsWith(i.href);
+    return (
+      <li key={i.href} className="relative">
+        <Link href={i.href} aria-label={i.label} className={`relative flex h-11 items-center justify-center gap-1.5 rounded-full ${active ? "px-3 text-brand" : "w-11 text-smoke"}`}>
+          {active && <motion.span layoutId="nav-ind" transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute inset-0 rounded-full bg-brand/10" />}
+          <i.icon size={22} className="relative" />
+          {active && <span className="relative text-caption font-semibold">{i.label}</span>}
+        </Link>
+      </li>
+    );
+  };
   return (
     <nav className="fixed inset-x-0 z-40 flex justify-center px-4 md:hidden" style={{ bottom: "calc(16px + env(safe-area-inset-bottom))" }}>
-      <ul className="flex h-14 w-full max-w-md items-center justify-around rounded-full border border-silver bg-snow px-4 shadow-soft">
-        {items.map(({ href, icon: Icon, label, fab }) => {
-          const active = href === "/" ? path === "/" : path.startsWith(href);
-          return (
-            <li key={href} className="relative">
-              <Link href={href} aria-label={label} className={`relative flex h-10 items-center justify-center gap-1.5 rounded-full ${fab || !active ? "w-10" : "px-3"} ${fab ? "bg-brand text-snow shadow-pop" : active ? "text-brand" : "text-smoke"}`}>
-                {active && !fab && <motion.span layoutId="nav-ind" transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute inset-0 rounded-full bg-brand/10" />}
-                <Icon size={22} className="relative" />
-                {active && !fab && <span className="relative text-caption font-semibold">{label}</span>}
-                {href === "/notifications" && unread > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand" />}
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="relative flex h-14 w-full max-w-md items-center justify-around rounded-full border border-silver bg-snow px-4 shadow-soft">
+        {items.slice(0, 2).map(cell)}
+        <li className="relative w-16">
+          <Link href="/enhance" aria-label="أنشئ" className="absolute -top-8 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full border-4 border-snow bg-brand text-snow shadow-pop active:scale-95"><Plus size={26} /></Link>
+          <span className="block pt-1 text-center text-caption font-semibold text-brand">أنشئ</span>
+        </li>
+        {items.slice(2).map(cell)}
       </ul>
     </nav>
   );
@@ -82,7 +85,7 @@ export function BottomNav() {
 
 // components/Sidebar.tsx — قائمة جانبية لشاشات الويب (≥768px)
 
-const LINKS = [["/", "الرئيسية", Home], ["/search", "بحث", Search], ["/enhance", "التحسين", Sparkles], ["/lab", "المختبر", FlaskConical], ["/community", "المجتمع", Users], ["/library", "مكتبتي", BookMarked], ["/stats", "إحصاءاتي", BarChart3], ["/notifications", "الإشعارات", Bell], ["/profile/me", "حسابي", User], ["/settings", "الإعدادات", Settings], ["/safety", "الأمان", ShieldCheck]] as const;
+const LINKS = [["/", "الرئيسية", Home], ["/search", "استكشف", Compass], ["/enhance", "التحسين", Sparkles], ["/lab", "المختبر", FlaskConical], ["/community", "المجتمع", Users], ["/library", "مكتبتي", BookMarked], ["/stats", "إحصاءاتي", BarChart3], ["/notifications", "الإشعارات", Bell], ["/profile/me", "حسابي", User], ["/settings", "الإعدادات", Settings], ["/safety", "الأمان", ShieldCheck]] as const;
 
 export function Sidebar() {
   const path = usePathname();

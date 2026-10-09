@@ -91,16 +91,23 @@ function Enhancer() {
   const copy = async () => { await navigator.clipboard.writeText(out); navigator.vibrate?.(10); toast("نُسخ البرومبت"); };
   const showResult = (out || busy || err) && !editing;
   const act = "flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-silver bg-snow text-sm active:opacity-70 disabled:text-ash";
+  const step = !text.trim() ? 1 : !out && !busy ? 2 : 3; // خيال: اختر ← خصّص ← أنشئ
 
   return (
     <main className="flex flex-col gap-3 pb-1" style={{ height: "calc(100dvh - var(--top) - var(--bottom) - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {([[1, "اختر"], [2, "خصّص"], [3, "أنشئ"]] as const).map(([n, l]) => (
+          <span key={n} className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium ${step === n ? "bg-brand text-snow" : step > n ? "bg-brand/10 text-brand" : "bg-mist text-smoke"}`}>
+            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[11px] ${step === n ? "bg-snow text-brand" : ""}`}>{n}</span>{l}
+          </span>))}
+      </div>
       {showResult ? (
         <button onClick={() => setEditing(true)} className="flex shrink-0 items-center gap-3 rounded-xl border border-silver bg-snow p-3 text-start shadow-soft">
           <span className="min-w-0 flex-1"><span className="block text-caption text-smoke">النص الأصلي</span><span className="line-clamp-1 text-sm">{text}</span></span>
           <span className="btn btn-soft !min-h-8 !px-3">تعديل</span>
         </button>
       ) : (<>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="اكتب أو الصق البرومبت الخام هنا…" className="min-h-[120px] flex-1 resize-none rounded-xl border border-silver bg-snow px-4 py-3 text-base outline-none transition-colors focus:border-brand" />
+        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="اكتب فكرتك… أو الصق برومبتًا خامًا" className="min-h-[120px] flex-1 resize-none rounded-xl border border-silver bg-snow px-4 py-3 text-base outline-none transition-colors focus:border-brand" />
         {!text && <div className="flex shrink-0 flex-wrap gap-2">{EXAMPLES.map((x) => <button key={x} onClick={() => setText(x)} className="btn btn-soft !min-h-9 !px-3 !text-caption">{x}</button>)}</div>}
         <div className="shrink-0"><Chips items={cats.map((c) => c.name_ar)} value={cat?.name_ar ?? ""} onChange={(v) => setCat(cats.find((c) => c.name_ar === v) ?? null)} /></div>
         <div className="flex shrink-0 gap-2"><button onClick={() => setOpts(true)} className="flex min-h-11 flex-1 items-center justify-between rounded-xl border border-silver bg-snow px-4 text-sm">
@@ -112,7 +119,7 @@ function Enhancer() {
 
       <button onClick={busy ? () => ctl.current?.abort() : run} disabled={!busy && !text.trim()}
         className="flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-brand text-sm font-medium text-snow shadow-pop active:opacity-80 disabled:bg-mist disabled:text-ash disabled:shadow-none">
-        {busy ? <><Square size={16} />إيقاف</> : out && !editing ? <><RefreshCw size={16} />إعادة التوليد</> : "حسّن الآن"}
+        {busy ? <><Square size={16} />إيقاف</> : out && !editing ? <><RefreshCw size={16} />إعادة التوليد</> : "أنشئ النتيجة"}
       </button>
 
       <AnimatePresence>

@@ -5,6 +5,7 @@ import { buildMessages, getSettings, logError, streamEnhance, svc } from "@/lib/
 
 export const runtime = "nodejs";
 const hits = new Map<string, number[]>(); // rate limit بسيط: 10 طلبات/دقيقة (استبدله بـ Upstash عند التوسع)
+const guests = new Map<string, number[]>(); // تجربة الزائر: 2/ساعة و5/يوم لكل عنوان — بلا تسجيل
 
 export async function POST(req: Request) {
   const store = cookies();
@@ -12,18 +13,26 @@ export async function POST(req: Request) {
     cookies: { getAll: () => store.getAll(), setAll: () => {} },
   });
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) { // تجربة مجانية بلا تسجيل (حدّ صارم يحمي التكلفة)
+    const ip = (req.headers.get("x-forwarded-for") ?? "local").split(",")[0].trim() || "local";
+    const now = Date.now(), rec = (guests.get(ip) ?? []).filter((t) => now - t < 86_400_000);
+    const hour = rec.filter((t) => now - t < 3_600_000);
+    if (hour.length >= 2 || rec.length >= 5) return Response.json({ error: "guest_limit" }, { status: 429 });
+    guests.set(ip, [...rec, now]);
+  }
 
   const cfg = await getSettings();
   if (cfg.flags?.enhancer === false) return Response.json({ error: "disabled" }, { status: 503 });
-  const limit = cfg.rate ?? 10;
-  let allowed: any = true, rlErr: any = null;
-  try { ({ data: allowed, error: rlErr } = await svc().rpc("rate_hit", { p_user: user.id, p_limit: limit })); } catch (e) { rlErr = e; } // دائم عبر Postgres
-  if (rlErr) { // احتياطي إن لم يُنفَّذ SQL بعد: ذاكرة المثيل
-    const now = Date.now(), recent = (hits.get(user.id) ?? []).filter((t) => now - t < 60_000);
-    if (recent.length >= limit) return Response.json({ error: "rate_limited" }, { status: 429 });
-    hits.set(user.id, [...recent, now]);
-  } else if (!allowed) return Response.json({ error: "rate_limited" }, { status: 429 });
+  if (user) { // حدّ المسجّلين (الضيف له حدّه الخاص أعلاه)
+    const limit = cfg.rate ?? 10;
+    let allowed: any = true, rlErr: any = null;
+    try { ({ data: allowed, error: rlErr } = await svc().rpc("rate_hit", { p_user: user.id, p_limit: limit })); } catch (e) { rlErr = e; } // دائم عبر Postgres
+    if (rlErr) { // احتياطي إن لم يُنفَّذ SQL بعد: ذاكرة المثيل
+      const now = Date.now(), recent = (hits.get(user.id) ?? []).filter((t) => now - t < 60_000);
+      if (recent.length >= limit) return Response.json({ error: "rate_limited" }, { status: 429 });
+      hits.set(user.id, [...recent, now]);
+    } else if (!allowed) return Response.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   const b = await req.json();
   if (!b?.text || String(b.text).length > 8000) return Response.json({ error: "bad_input" }, { status: 400 });
@@ -40,7 +49,7 @@ export async function POST(req: Request) {
       b.model,
       b.onlyFree !== false
     );
-    try { svc().from("usage").insert({ user_id: user.id, model }).then(() => {}, () => {}); } catch {}
+    if (user) { try { svc().from("usage").insert({ user_id: user.id, model }).then(() => {}, () => {}); } catch {} }
     return new Response(body, {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Model-Used": model },
     });
