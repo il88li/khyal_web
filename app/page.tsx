@@ -80,7 +80,7 @@ async function fetchPage(tab: Tab, cat: number | null, page: number): Promise<Pa
   return { rows: list, note };
 }
 
-const Skeleton = () => <div className="flex h-[300px] animate-pulse flex-col gap-3 rounded-xl border border-silver bg-fog p-5"><div className="h-10 w-40 rounded-full bg-mist" /><div className="h-4 w-full rounded-full bg-mist" /><div className="h-4 w-2/3 rounded-full bg-mist" /></div>;
+const Skeleton = () => <div className="flex h-[210px] animate-pulse flex-col gap-2 rounded-xl border border-silver bg-fog p-4"><div className="h-7 w-32 rounded-full bg-mist" /><div className="h-3.5 w-full rounded-full bg-mist" /><div className="h-3.5 w-2/3 rounded-full bg-mist" /></div>;
 
 export default function Feed() {
   const router = useRouter();
@@ -145,13 +145,13 @@ export default function Feed() {
   const go = (d: number) => { const i = TABS.findIndex((t) => t[0] === tab) + d; if (TABS[i]) setTab(TABS[i][0]); };
 
   return (
-    <main className="flex flex-col gap-3">
+    <main className="flex flex-col gap-2.5">
       <div className="lg:hidden"><DailyCard /></div>
-      <header style={{ top: "calc(var(--top) + env(safe-area-inset-top) - 6px)" }} className="sticky z-30 -mx-5 flex flex-col border-b border-silver bg-fog px-5 py-2 md:mx-0 md:px-0">
+      <header style={{ top: "calc(var(--top) + env(safe-area-inset-top) - 6px)" }} className="sticky z-30 -mx-4 flex flex-col border-b border-silver bg-fog px-5 py-2 md:mx-0 md:px-0">
         <nav className="flex gap-1 rounded-full bg-mist p-1">
           {TABS.map(([k, l]) => (
-            <button key={k} onClick={() => setTab(k)} className="relative min-h-10 flex-1 rounded-full text-sm font-medium">
-              {tab === k && <motion.span layoutId="feed-tab" transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute inset-0 rounded-full bg-snow shadow-soft" />}
+            <button key={k} onClick={() => setTab(k)} className="relative min-h-8 flex-1 rounded-full text-caption font-medium">
+              {tab === k && <motion.span layoutId="feed-tab" transition={{ type: "spring", stiffness: 450, damping: 36 }} className="absolute inset-0 rounded-full bg-snow shadow-soft" />}
               <span className={`relative ${tab === k ? "text-brand" : "text-smoke"}`}>{l}</span>
             </button>
           ))}
@@ -161,8 +161,8 @@ export default function Feed() {
       {tab === "foryou" && note && <p className="rounded-xl bg-brand/5 px-4 py-2 text-caption text-graphite">{note}</p>}
 
       {tab === "cats" && (
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0 [scrollbar-width:none]">
-          {cats.map((c) => <button key={c.id} onClick={() => setCat(c.id === cat ? null : c.id)} className={`min-h-10 shrink-0 rounded-full border px-4 text-sm ${cat === c.id ? "border-brand bg-brand text-snow" : "border-silver text-graphite"}`}>{c.name_ar}</button>)}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
+          {cats.map((c) => <button key={c.id} onClick={() => setCat(c.id === cat ? null : c.id)} className={`min-h-8 shrink-0 rounded-full border px-3 text-caption ${cat === c.id ? "border-brand bg-brand text-snow" : "border-silver text-graphite"}`}>{c.name_ar}</button>)}
         </div>
       )}
 
@@ -170,7 +170,7 @@ export default function Feed() {
         {(pull > 20 || refreshing) && <Loader2 size={20} className={refreshing ? "animate-spin" : ""} style={{ transform: `rotate(${pull * 4}deg)` }} />}
       </div>
 
-      <motion.div style={{ touchAction: "pan-y" }} className="flex flex-col gap-3 pb-5" onPanEnd={(_, i) => { if (Math.abs(i.offset.x) > 80 && Math.abs(i.velocity.x) > 200 && Math.abs(i.offset.y) < 60) go(i.offset.x < 0 ? 1 : -1); }}>
+      <motion.div style={{ touchAction: "pan-y" }} className="flex flex-col gap-2.5 pb-4" onPanEnd={(_, i) => { if (Math.abs(i.offset.x) > 80 && Math.abs(i.velocity.x) > 200 && Math.abs(i.offset.y) < 60) go(i.offset.x < 0 ? 1 : -1); }}>
         {items.map((p) => <PromptCard key={p.id} p={p} />)}
         {loading && Array.from({ length: items.length ? 1 : 3 }).map((_, i) => <Skeleton key={i} />)}
         {!loading && err && <div className="flex flex-col items-center gap-3 py-16 text-center"><p className="max-w-[30ch] text-graphite">{err}</p><button className="btn btn-primary" onClick={() => load(true)}>إعادة المحاولة</button></div>}

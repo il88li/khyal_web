@@ -1,5 +1,5 @@
 "use client";
-// components/PromptCard.tsx — بطاقة البرومبت: قبل/بعد، نسخ بنقرة، إعجاب بنقرتين مع قلوب متطايرة، تعليقات، حفظ، مشاركة، تعديل/حذف/إبلاغ
+// components/PromptCard.tsx — بطاقة البرومبت (مصغّرة): رأس مدمج، نص، شريط نسخ أساسي، شريط تفاعل سفلي
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,8 +9,8 @@ import { BottomSheet, Comments, Lightbox, VarsSheet } from "./ui";
 import type { PromptRow } from "@/types";
 
 const REASONS = ["محتوى مسيء", "احتيال أو spam", "انتهاك حقوق", "أخرى"];
-const iconBtn = "flex h-9 w-9 items-center justify-center rounded-full text-smoke active:bg-mist";
-const act = "flex h-11 items-center gap-1.5 rounded-full px-3 text-sm text-graphite active:bg-mist";
+const iconBtn = "icon-btn";
+const act = "flex h-8 items-center gap-1 rounded-full px-2 text-caption text-graphite active:bg-mist";
 
 export default function PromptCard({ p }: { p: PromptRow }) {
   const cats = useCategories();
@@ -74,7 +74,7 @@ export default function PromptCard({ p }: { p: PromptRow }) {
   async function report(reason: string) {
     const id = await uid(); if (!id) return toast("سجّل الدخول أولاً");
     const { error } = await sb.from("reports").insert({ prompt_id: p.id, reporter_id: id, reason }); setRep(false);
-    toast(error ? (error.code === "23505" ? "أبلغتَ عن هذا المنشور سابقاً" : "تعذّر الإرسال") : "شكراً، سنراجع البلاغ");
+    toast(error ? (error.code === "23505" ? "بلغتَ عن هذا المنشور سابقاً" : "تعذّر الإرسال") : "شكراً، سنراجع البلاغ");
   }
 
   if (gone) return null;
@@ -83,18 +83,24 @@ export default function PromptCard({ p }: { p: PromptRow }) {
   const hot = p.like_count >= 50, fresh = Date.now() - new Date(p.created_at).getTime() < 86_400_000, trusted = (p.copy_count ?? 0) >= 10; // شارات الحالة
 
   return (
-    <motion.article initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    <motion.article initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 420, damping: 34 }}
       className="overflow-hidden rounded-xl border border-silver bg-snow shadow-soft">
-      <header className="flex items-center gap-3 p-4 pb-3">
-        <Link href={`/profile/${p.author?.id}`} className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-brand/10">
+      {/* الرأس: هوية + شارات الحالة + قائمة */}
+      <header className="flex items-center gap-2 p-2.5">
+        <Link href={`/profile/${p.author?.id}`} className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-brand/10">
           {p.author?.avatar_url && <img src={p.author.avatar_url} alt="" className="h-full w-full object-cover" loading="lazy" />}
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{name}</p>
-          <p className="flex items-center gap-1.5 text-caption text-smoke"><span>{ago(p.created_at)}</span>{cat && <span className="rounded-full bg-brand/10 px-2 text-brand">{cat}</span>}{hot && <span className="rounded-full bg-brand px-2 text-snow">ترند</span>}{fresh && <span className="rounded-full bg-mist px-2 text-graphite">جديد</span>}{trusted && <span className="rounded-full bg-mist px-2 text-graphite">موثّق</span>}</p>
+          <p className="flex items-center gap-1.5 truncate text-caption font-semibold">{name}<span className="font-normal text-smoke">· {ago(p.created_at)}</span></p>
+          <p className="flex items-center gap-1 overflow-hidden text-[10px] text-smoke">
+            {cat && <span className="rounded-full bg-brand/10 px-1.5 text-brand">{cat}</span>}
+            {hot && <span className="rounded-full bg-brand px-1.5 text-snow">ترند</span>}
+            {fresh && <span className="rounded-full bg-mist px-1.5 text-graphite">جديد</span>}
+            {trusted && <span className="rounded-full bg-mist px-1.5 text-graphite">موثّق</span>}
+          </p>
         </div>
-        {mine ? <><button onClick={() => { setDraft(shown); setEdit(true); }} aria-label="تعديل" className={iconBtn}><Pencil size={17} /></button><button onClick={del} aria-label="حذف" className={iconBtn}><Trash2 size={17} /></button></>
-          : <button onClick={() => p.id !== "preview" && setRep(true)} aria-label="إبلاغ" className={iconBtn}><Flag size={17} /></button>}
+        {mine ? <><button onClick={() => { setDraft(shown); setEdit(true); }} aria-label="تعديل" className={iconBtn}><Pencil size={15} /></button><button onClick={del} aria-label="حذف" className={iconBtn}><Trash2 size={15} /></button></>
+          : <button onClick={() => p.id !== "preview" && setRep(true)} aria-label="إبلاغ" className={iconBtn}><Flag size={15} /></button>}
       </header>
 
       {first && (
@@ -103,53 +109,58 @@ export default function PromptCard({ p }: { p: PromptRow }) {
             {p.images.map((im, i) => (
               <button key={i} onClick={() => tapImg(i)} className="relative h-full w-full shrink-0 snap-center">
                 <img src={thumb(im.url, 800)} alt="" width={im.w} height={im.h} loading="lazy" decoding="async" className="h-full w-full bg-mist object-cover" />
-                {im.url.endsWith(".gif") && <span className="absolute left-3 top-3 rounded-full bg-brand px-2 text-[11px] text-snow">GIF</span>}
+                {im.url.endsWith(".gif") && <span className="absolute left-2 top-2 rounded-full bg-brand px-1.5 text-[10px] text-snow">GIF</span>}
               </button>))}
           </div>
-          {p.images.length > 1 && <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1">{p.images.map((_, i) => <span key={i} className={`h-1.5 rounded-full bg-snow ${i === idx ? "w-4" : "w-1.5 opacity-60"}`} />)}</div>}
+          {p.images.length > 1 && <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1">{p.images.map((_, i) => <span key={i} className={`h-1 rounded-full bg-snow ${i === idx ? "w-3.5" : "w-1 opacity-60"}`} />)}</div>}
         </div>)}
 
-      <div className="flex flex-col gap-2 px-4 pt-3">
+      {/* النص */}
+      <div className="flex flex-col gap-1.5 px-3 pt-2">
         {hasBoth && (
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-full bg-mist p-0.5 text-caption">
+            <div className="flex gap-0.5 rounded-full bg-mist p-0.5 text-[10px]">
               {([[false, "✨ محسّن"], [true, "الأصلي"]] as const).map(([v, l]) => (
-                <button key={l} onClick={() => setOrig(v)} className={`min-h-8 rounded-full px-3 font-medium transition-colors ${orig === v ? "bg-snow text-brand shadow-soft" : "text-smoke"}`}>{l}</button>))}
+                <button key={l} onClick={() => setOrig(v)} className={`min-h-6 rounded-full px-2 font-medium transition-colors ${orig === v ? "bg-snow text-brand shadow-soft" : "text-smoke"}`}>{l}</button>))}
             </div>
-            {p.model && !orig && <span dir="ltr" className="min-w-0 truncate text-caption text-smoke">{p.model.replace(":free", "").split("/").pop()}</span>}
+            {p.model && !orig && <span dir="ltr" className="min-w-0 truncate text-[10px] text-smoke">{p.model.replace(":free", "").split("/").pop()}</span>}
           </div>)}
-        <p onClick={tapText} className={`whitespace-pre-wrap text-base leading-[1.75] text-charcoal ${long && !more ? "line-clamp-6" : ""}`}>{shown}</p>
-        {long && <button onClick={() => setMore(!more)} className="self-start text-sm font-medium text-brand">{more ? "عرض أقل" : "المزيد"}</button>}
-        {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && <p className="flex flex-wrap items-center gap-x-3 text-caption text-smoke">{!!p.copy_count && <span>نُسخ {fmt(p.copy_count)} مرة</span>}{!!p.fork_count && <span>فُرّع {fmt(p.fork_count)}</span>}{p.forked_from && <Link href={`/p/${p.forked_from}`} className="text-brand">مفرّع من أصل ↗</Link>}</p>}
+        <p onClick={tapText} className={`whitespace-pre-wrap text-base leading-[1.6] text-charcoal ${long && !more ? "line-clamp-5" : ""}`}>{shown}</p>
+        {long && <button onClick={() => setMore(!more)} className="self-start text-caption font-medium text-brand">{more ? "عرض أقل" : "المزيد"}</button>}
+        {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && <p className="flex flex-wrap items-center gap-x-2 text-[10px] text-smoke">{!!p.copy_count && <span>نُسخ {fmt(p.copy_count)} مرة</span>}{!!p.fork_count && <span>فُرّع {fmt(p.fork_count)}</span>}{p.forked_from && <Link href={`/p/${p.forked_from}`} className="text-brand">مفرّع من أصل ↗</Link>}</p>}
       </div>
 
-      <div className="flex items-center justify-between px-2 pt-2">
-        <button ref={likeBtn} onClick={() => toggle("likes")} aria-label="إعجاب" className={act}>
-          <motion.span key={pulse} animate={pulse ? { scale: [1, 1.35, 1] } : {}} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-            <Heart size={22} className={liked ? "text-brand" : ""} fill={liked ? "currentColor" : "none"} /></motion.span>
-          <span className="tabular-nums">{fmt(count)}</span></button>
-        <button onClick={() => p.id !== "preview" && setSheet(true)} aria-label="تعليقات" className={act}><MessageCircle size={22} /><span className="tabular-nums">{fmt(p.comment_count)}</span></button>
-        <button onClick={share} aria-label="مشاركة" className={act}><Share2 size={22} /></button>
-        <button onClick={() => toggle("saves")} aria-label="حفظ" className={act}><Bookmark size={22} className={saved ? "text-brand" : ""} fill={saved ? "currentColor" : "none"} /></button>
+      {/* الإجراء الأساسي: النسخ أولاً لأنها قيمة البطاقة */}
+      <div className="flex gap-1.5 px-3 pt-2">
+        <button onClick={copy} className="btn btn-soft !min-h-8 flex-1"><Copy size={13} />نسخ البرومبت</button>
+        {vars.length ? <button onClick={() => setVsheet(true)} className="btn !min-h-8"><Braces size={13} className="text-brand" />عبّئ</button> : <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn !min-h-8"><Sparkles size={13} className="text-brand" />جرّبه</Link>}
+        {!mine && p.id !== "preview" && <Link href={`/new?fork=${p.id}`} className="btn !min-h-8"><GitFork size={13} className="text-brand" />فرّع</Link>}
       </div>
 
-      <div className="flex gap-2 p-4 pt-2">
-        <button onClick={copy} className="btn btn-soft !min-h-11 flex-1"><Copy size={16} />نسخ البرومبت</button>
-        {vars.length ? <button onClick={() => setVsheet(true)} className="btn !min-h-11"><Braces size={16} className="text-brand" />عبّئ</button> : <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn !min-h-11"><Sparkles size={16} className="text-brand" />جرّبه</Link>}
-        {!mine && p.id !== "preview" && <Link href={`/new?fork=${p.id}`} className="btn !min-h-11"><GitFork size={16} className="text-brand" />فرّع</Link>}
+      {/* شريط التفاعل السفلي */}
+      <div className="mt-2 flex items-center justify-between border-t border-silver bg-fog px-2 py-1">
+        <div className="flex items-center gap-0.5">
+          <button ref={likeBtn} onClick={() => toggle("likes")} aria-label="إعجاب" className={act}>
+            <motion.span key={pulse} animate={pulse ? { scale: [1, 1.3, 1] } : {}} transition={{ type: "spring", stiffness: 480, damping: 18 }}>
+              <Heart size={15} className={liked ? "text-brand" : ""} fill={liked ? "currentColor" : "none"} /></motion.span>
+            <span className="tabular-nums">{fmt(count)}</span></button>
+          <button onClick={() => p.id !== "preview" && setSheet(true)} aria-label="تعليقات" className={act}><MessageCircle size={15} /><span className="tabular-nums">{fmt(p.comment_count)}</span></button>
+          <button onClick={share} aria-label="مشاركة" className={act}><Share2 size={15} /></button>
+        </div>
+        <button onClick={() => toggle("saves")} aria-label="حفظ" className={act}><Bookmark size={15} className={saved ? "text-brand" : ""} fill={saved ? "currentColor" : "none"} /></button>
       </div>
 
       <BottomSheet open={sheet} onClose={() => setSheet(false)} title="التعليقات">{sheet && <Comments promptId={p.id} />}</BottomSheet>
       {lb !== null && <Lightbox images={p.images} start={lb} onClose={() => setLb(null)} />}
       <BottomSheet compact open={edit} onClose={() => setEdit(false)} title="تعديل البرومبت">
-        <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} className="min-h-[140px] w-full resize-none rounded-xl border border-silver bg-snow px-4 py-3 text-base outline-none focus:border-brand" />
+        <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} className="min-h-[140px] w-full resize-none rounded-xl border border-silver bg-snow px-3 py-2 text-base outline-none focus:border-brand" />
         {vers.length > 0 && (
-          <div className="mt-3 flex flex-col gap-2"><p className="text-caption text-smoke">الإصدارات السابقة — اضغط للاسترجاع</p>
-            {vers.map((x) => <button key={x.id} onClick={() => setDraft(x.enhanced ?? x.body)} className="flex flex-col gap-0.5 rounded-xl border border-silver bg-snow p-3 text-start"><span className="text-caption text-smoke">{ago(x.created_at)}</span><span className="line-clamp-2 text-sm">{x.enhanced ?? x.body}</span></button>)}</div>)}
-        <button onClick={saveEdit} disabled={!draft.trim()} className="btn btn-primary mt-3 !min-h-12 w-full disabled:opacity-50">حفظ التعديل</button>
+          <div className="mt-2 flex flex-col gap-1.5"><p className="text-caption text-smoke">الإصدارات السابقة — اضغط للاسترجاع</p>
+            {vers.map((x) => <button key={x.id} onClick={() => setDraft(x.enhanced ?? x.body)} className="flex flex-col gap-0.5 rounded-xl border border-silver bg-snow p-2 text-start"><span className="text-caption text-smoke">{ago(x.created_at)}</span><span className="line-clamp-2 text-caption">{x.enhanced ?? x.body}</span></button>)}</div>)}
+        <button onClick={saveEdit} disabled={!draft.trim()} className="btn btn-primary mt-2 !min-h-9 w-full disabled:opacity-50">حفظ التعديل</button>
       </BottomSheet>
       <BottomSheet compact open={rep} onClose={() => setRep(false)} title="إبلاغ عن المنشور">
-        {REASONS.map((r) => <button key={r} onClick={() => report(r)} className="mb-2 min-h-12 w-full rounded-xl border border-silver px-4 text-start text-sm">{r}</button>)}
+        {REASONS.map((r) => <button key={r} onClick={() => report(r)} className="mb-1.5 min-h-9 w-full rounded-xl border border-silver px-3 text-start text-caption">{r}</button>)}
       </BottomSheet>
       <VarsSheet text={shown} open={vsheet} onClose={() => setVsheet(false)} />
     </motion.article>

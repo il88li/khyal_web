@@ -24,12 +24,12 @@ export function BottomSheet({ open, onClose, title, children, compact }: { open:
         <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 bg-charcoal/40" />
         <motion.div key="sh" role="dialog" aria-label={title} drag="y" dragListener={false} dragControls={controls} dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
           onDragEnd={(_, i) => (i.offset.y > 120 || i.velocity.y > 600) && onClose()}
-          initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className={`fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-xl flex-col rounded-t-xl border border-silver bg-snow shadow-soft ${compact ? "max-h-[85dvh] pb-4" : "h-[85dvh]"}`} style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          <div onPointerDown={(e) => controls.start(e)} style={{ touchAction: "none" }} className="flex shrink-0 cursor-grab flex-col items-center gap-2 px-5 pb-3 pt-3">
-            <span className="h-1 w-10 rounded-full bg-silver" />{title && <h2 className="text-lg font-semibold">{title}</h2>}
+          initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 460, damping: 38 }}
+          className={`fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-xl flex-col rounded-t-xl border border-silver bg-snow shadow-soft ${compact ? "max-h-[85dvh] pb-3" : "h-[85dvh]"}`} style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div onPointerDown={(e) => controls.start(e)} style={{ touchAction: "none" }} className="flex shrink-0 cursor-grab flex-col items-center gap-1.5 px-5 pb-2 pt-2.5">
+            <span className="h-1 w-8 rounded-full bg-silver" />{title && <h2 className="text-caption font-semibold">{title}</h2>}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col px-5">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col px-4">{children}</div>
         </motion.div>
       </>)}
     </AnimatePresence>
@@ -41,14 +41,14 @@ export function Toaster() {
   const [m, setM] = useState("");
   useEffect(() => {
     let t: any;
-    const h = (e: Event) => { setM((e as CustomEvent).detail); clearTimeout(t); t = setTimeout(() => setM(""), 2400); };
+    const h = (e: Event) => { setM((e as CustomEvent).detail); clearTimeout(t); t = setTimeout(() => setM(""), 2000); };
     window.addEventListener("khiyal:toast", h);
     return () => window.removeEventListener("khiyal:toast", h);
   }, []);
   return (
     <AnimatePresence>
-      {m && <motion.div role="status" initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-x-5 z-50 mx-auto max-w-md rounded-xl bg-charcoal px-4 py-3 text-sm text-snow shadow-soft" style={{ top: "calc(12px + env(safe-area-inset-top))" }}>{m}</motion.div>}
+      {m && <motion.div role="status" initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ type: "spring", stiffness: 500, damping: 38 }}
+        className="fixed inset-x-5 z-50 mx-auto max-w-md rounded-xl bg-charcoal px-3 py-2 text-caption text-snow shadow-soft" style={{ top: "calc(12px + env(safe-area-inset-top))" }}>{m}</motion.div>}
     </AnimatePresence>
   );
 }
@@ -57,7 +57,7 @@ export function Toaster() {
 export function CopyButton({ text, label = "نسخ البرومبت" }: { text: string; label?: string }) {
   return (
     <button onClick={async () => { await navigator.clipboard.writeText(text); navigator.vibrate?.(10); toast("نُسخ البرومبت"); }}
-      className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-silver bg-snow px-5 text-sm font-medium shadow-soft"><Copy size={18} />{label}</button>
+      className="btn"><Copy size={14} />{label}</button>
   );
 }
 
@@ -160,22 +160,22 @@ export function Comments({ promptId }: { promptId: string }) {
     if (error) { setItems((a) => (a ? [...a, c].sort((x, y) => x.created_at.localeCompare(y.created_at)) : a)); toast("تعذّر الحذف"); }
   }
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-2">
-        {!items ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-xl bg-fog" />)
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto py-1">
+        {!items ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-9 animate-pulse rounded-xl bg-fog" />)
           : !items.length ? <p className="py-8 text-center text-graphite">كن أول من يعلّق.</p>
           : items.map((c) => (
-            <div key={c.id} className="flex gap-3">
-              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-mist">{c.author?.avatar_url && <img src={c.author.avatar_url} alt="" className="h-full w-full object-cover" />}</span>
-              <div className="min-w-0 flex-1"><p className="text-caption text-smoke"><span className="font-medium text-charcoal">{c.author?.display_name ?? c.author?.username ?? "مستخدم"}</span> · {ago(c.created_at)}</p>
-                <p className="max-w-[65ch] whitespace-pre-wrap break-words text-sm">{c.body}</p></div>
-              {c.author_id === me && <button onClick={() => del(c)} aria-label="حذف" className="flex h-10 w-10 shrink-0 items-center justify-center text-smoke active:opacity-60"><X size={16} /></button>}
+            <div key={c.id} className="flex gap-2">
+              <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-mist">{c.author?.avatar_url && <img src={c.author.avatar_url} alt="" className="h-full w-full object-cover" />}</span>
+              <div className="min-w-0 flex-1"><p className="text-[10px] text-smoke"><span className="font-semibold text-charcoal">{c.author?.display_name ?? c.author?.username ?? "مستخدم"}</span> · {ago(c.created_at)}</p>
+                <p className="max-w-[65ch] whitespace-pre-wrap break-words text-caption">{c.body}</p></div>
+              {c.author_id === me && <button onClick={() => del(c)} aria-label="حذف" className="icon-btn shrink-0 self-start"><X size={14} /></button>}
             </div>))}
         <div ref={end} />
       </div>
-      <div className="flex items-center gap-2 pb-3">
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} maxLength={500} placeholder="اكتب تعليقاً…" className="min-h-12 flex-1 rounded-full border border-silver bg-snow px-4 text-sm outline-none focus:border-brand" />
-        <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-snow active:opacity-80 disabled:bg-mist disabled:text-ash"><Send size={18} /></button>
+      <div className="flex items-center gap-1.5 border-t border-silver bg-snow pt-2 pb-1">
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} maxLength={500} placeholder="اكتب تعليقاً…" className="h-9 min-h-9 flex-1 rounded-full border border-silver bg-fog px-3 text-caption outline-none transition-colors focus:border-brand" />
+        <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-snow transition-opacity active:opacity-80 disabled:bg-mist disabled:text-ash"><Send size={15} /></button>
       </div>
     </div>
   );
@@ -222,18 +222,18 @@ export function DailyCard() {
     })();
   }, []);
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-silver bg-snow p-4 shadow-soft">
+    <section className="flex flex-col gap-2 rounded-xl border border-silver bg-snow p-3 shadow-soft">
       {st && st.streak > 0 && (
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand/10 text-brand"><Flame size={22} /></span>
-          <div className="flex-1"><p className="text-base font-bold">{st.streak} {st.streak === 1 ? "يوم" : "أيام"} متتالية</p><p className="text-caption text-smoke">أفضل سلسلة لك: {st.best}</p></div>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand"><Flame size={18} /></span>
+          <div className="flex-1"><p className="text-caption font-bold">{st.streak} {st.streak === 1 ? "يوم" : "أيام"} متتالية</p><p className="text-[10px] text-smoke">أفضل سلسلة لك: {st.best}</p></div>
         </div>)}
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mist text-brand"><Target size={16} /></span>
-        <div className="min-w-0 flex-1"><p className="text-caption text-smoke">تحدي اليوم</p><p className="text-sm">{ch}</p></div>
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-mist text-brand"><Target size={14} /></span>
+        <div className="min-w-0 flex-1"><p className="text-[10px] text-smoke">تحدي اليوم</p><p className="text-caption">{ch}</p></div>
       </div>
-      <Link href={`/enhance?text=${encodeURIComponent(ch)}`} className="btn btn-primary !min-h-11">ابدأ التحدي</Link>
-      {path !== "/community" && <Link href="/community" className="btn btn-soft !min-h-11">نتيجة التحدي في المجتمع</Link>}
+      <Link href={`/enhance?text=${encodeURIComponent(ch)}`} className="btn btn-primary !min-h-8">ابدأ التحدي</Link>
+      {path !== "/community" && <Link href="/community" className="btn btn-soft !min-h-8">نتيجة التحدي في المجتمع</Link>}
     </section>
   );
 }
@@ -246,12 +246,12 @@ export function VarsSheet({ text, open, onClose }: { text: string; open: boolean
     <BottomSheet open={open} onClose={onClose} title="عبّئ المتغيرات">
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
         {vars.map((v) => (
-          <label key={v} className="flex flex-col gap-1"><span className="text-caption text-smoke">{v}</span>
-            <input value={vals[v] ?? ""} onChange={(e) => setVals({ ...vals, [v]: e.target.value })} placeholder={`اكتب ${v}…`} className="min-h-11 rounded-xl border border-silver bg-snow px-4 text-sm outline-none focus:border-brand" /></label>))}
-        <p className="whitespace-pre-wrap rounded-xl bg-mist p-3 text-sm">{out}</p>
+          <label key={v} className="flex flex-col gap-1"><span className="text-[10px] text-smoke">{v}</span>
+            <input value={vals[v] ?? ""} onChange={(e) => setVals({ ...vals, [v]: e.target.value })} placeholder={`اكتب ${v}…`} className="min-h-9 rounded-xl border border-silver bg-snow px-3 text-caption outline-none transition-colors focus:border-brand" /></label>))}
+        <p className="whitespace-pre-wrap rounded-xl bg-mist p-2.5 text-caption">{out}</p>
         <div className="flex gap-2">
-          <button disabled={!ready} onClick={async () => { await navigator.clipboard.writeText(out); navigator.vibrate?.(10); toast("نُسخ البرومبت جاهزاً"); }} className="btn btn-primary !min-h-11 flex-1 disabled:opacity-50">نسخ النتيجة</button>
-          <Link href={`/enhance?text=${encodeURIComponent(out)}`} className="btn !min-h-11">حسّن</Link>
+          <button disabled={!ready} onClick={async () => { await navigator.clipboard.writeText(out); navigator.vibrate?.(10); toast("نُسخ البرومبت جاهزاً"); }} className="btn btn-primary !min-h-8 flex-1 disabled:opacity-50">نسخ النتيجة</button>
+          <Link href={`/enhance?text=${encodeURIComponent(out)}`} className="btn !min-h-8">حسّن</Link>
         </div>
       </div>
     </BottomSheet>

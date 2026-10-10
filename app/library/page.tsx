@@ -49,7 +49,7 @@ export default function Library() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في مكتبتك…" className="min-h-12 w-full rounded-full border border-silver bg-snow ps-11 pe-4 text-sm shadow-soft outline-none transition-colors focus:border-brand" />
       </div>
       {usedCats.length > 0 && (
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0 [scrollbar-width:none]">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
           <button onClick={() => setCat(null)} className={chip(cat == null)}>الكل</button>
           {usedCats.map((c) => <button key={c} onClick={() => setCat(c)} className={chip(cat === c)}>{cats[c] ?? "عام"}</button>)}
         </div>)}

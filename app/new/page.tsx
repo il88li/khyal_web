@@ -53,7 +53,7 @@ export default function NewPrompt() {
       {preview ? <PromptCard p={row} /> : (<>
         {forkOf && <p className="rounded-xl bg-brand/10 p-3 text-caption text-brand">مفرّع من برومبت آخر — سيُنسب الأصل تلقائياً، عدّل كما تشاء.</p>}
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder="اكتب البرومبت…" className="min-h-[160px] w-full resize-none rounded-xl border border-silver bg-snow px-4 py-3 text-base outline-none focus:border-brand" />
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0 [scrollbar-width:none]">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
           {cats.map((c) => <button key={c.id} onClick={() => setCat(c.id === cat ? null : c.id)} className={`min-h-10 shrink-0 rounded-full border px-4 text-sm ${cat === c.id ? "border-brand bg-brand text-snow" : "border-silver text-graphite"}`}>{c.name_ar}</button>)}
         </div>
         <div className="grid grid-cols-3 gap-2">

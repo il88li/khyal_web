@@ -110,7 +110,7 @@ function Lab() {
       {!results && !text && <div className="flex flex-wrap gap-2">{EXAMPLES.map((x) => <button key={x} onClick={() => setText(x)} className="btn btn-soft !min-h-9 !px-3 !text-caption">{x}</button>)}</div>}
 
       {!results && !!cats.length && (
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0 [scrollbar-width:none]">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
           {cats.map((c) => <button key={c.id} onClick={() => setCat(c)} className={`${chip(cat?.id === c.id)} !min-h-9 !px-3 !text-caption`}>{c.name_ar}</button>)}
         </div>
       )}
@@ -140,7 +140,7 @@ function Lab() {
             <p className="text-caption text-smoke">اسحب جانبياً للمقارنة</p>
             {busy && <p className="text-caption text-brand">جارٍ التوليد…</p>}
           </div>
-          <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 md:mx-0 md:px-0 [scrollbar-width:none]">
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0 [scrollbar-width:none]">
             {results.map((r) => (
               <article key={r.model} className={`flex w-[85vw] max-w-[360px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border bg-snow shadow-soft md:w-[340px] ${winner === r.model ? "border-brand" : "border-silver"}`}>
                 <header className="flex items-center gap-2 border-b border-silver px-3 py-2">

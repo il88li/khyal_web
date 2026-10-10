@@ -21,7 +21,7 @@ function pushHistory(text: string, out: string, model: string) {
 
 function Chips({ items, value, onChange, wrap }: { items: string[]; value: string; onChange: (v: string) => void; wrap?: boolean }) {
   return (
-    <div className={wrap ? "flex flex-wrap gap-2" : "-mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0 [scrollbar-width:none]"}>
+    <div className={wrap ? "flex flex-wrap gap-2" : "-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]"}>
       {items.map((i) => <button key={i} onClick={() => onChange(i)} className={`min-h-10 shrink-0 rounded-full border px-4 text-sm ${value === i ? "border-brand bg-brand text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>)}
     </div>
   );

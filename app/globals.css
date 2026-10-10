@@ -1,53 +1,68 @@
 @tailwind base; @tailwind components; @tailwind utilities;
+/* ===== خيال — نظام التصميم: ألوان ثيمية، أحجام مضغوطة، حركة سريعة ===== */
 :root {
-  color-scheme: light; --brand: 255 79 0; --top: 60px; --bottom: 80px;
-  /* فاتح: سطح أبيض، خلفية دافئة، حدود رقيقة، حبر واضح */
-  --c-snow: 255 255 255; --c-fog: 250 250 250; --c-mist: 239 240 246; --c-line: 229 231 235;
-  --c-ink: 51 51 51; --c-ink-2: 84 84 84; --c-ink-3: 110 110 118; --c-ash: 128 128 128;
+  color-scheme: light;
+  --brand: 255 79 0;
+  /* إيقاع الحركة: قصير وسريع (تفاعل = فوري) */
+  --t-fast: .12s; --ease: cubic-bezier(.2, .8, .3, 1);
+  /* مساحتا الشريطين العائمين */
+  --top: 54px; --bottom: 66px;
+  /* فاتح: سطح أبيض، خلفية باردة هادئة، حدود واضحة، حبر داكن للقراءة تحت الشمس */
+  --c-snow: 255 255 255; --c-fog: 245 246 249; --c-mist: 236 239 244; --c-line: 225 228 235;
+  --c-ink: 32 35 41; --c-ink-2: 74 79 88; --c-ink-3: 110 116 126; --c-ash: 152 157 166;
 }
 html.dark {
   color-scheme: dark;
-  --c-snow: 24 24 28; --c-fog: 15 15 18; --c-mist: 34 34 41; --c-line: 52 52 62;
-  --c-ink: 240 240 244; --c-ink-2: 199 199 207; --c-ink-3: 164 164 174; --c-ash: 122 122 133;
+  --c-snow: 22 23 27; --c-fog: 13 14 17; --c-mist: 34 36 43; --c-line: 50 53 62;
+  --c-ink: 236 238 242; --c-ink-2: 186 191 200; --c-ink-3: 141 147 158; --c-ash: 104 110 120;
 }
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+/* جذر أصغر (14px) ⇒ كل قيم rem (الارتفاعات، الحشو، الفواصل) تصغر معه: واجهة صغيرة ومتراصة */
+html { font-size: 14px; -webkit-text-size-adjust: 100%; }
 @media (min-width: 768px) { :root { --top: 16px; --bottom: 16px; } }
+@media (max-width: 349px) { html { font-size: 13px; } :root { --top: 50px; --bottom: 60px; } }
 html, body { background: rgb(var(--c-fog)); color: rgb(var(--c-ink)); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-body { font-feature-settings: "ss01"; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body { font-feature-settings: "ss01"; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; text-rendering: optimizeLegibility; }
 input, textarea { -webkit-user-select: text; user-select: text; }
 img { -webkit-user-drag: none; }
 h1, h2, h3 { text-wrap: balance; } p { text-wrap: pretty; overflow-wrap: anywhere; }
-/* تفاعل اللمس: ضغطة ناعمة بارتداد خفيف */
-button, a { transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), opacity .15s, background-color .2s, border-color .2s, color .2s; }
-button:not(:disabled):active, a:active { transform: scale(.96); }
+::selection { background: rgb(var(--brand) / .25); }
+/* تركيز واضح وسريع للوحة المفاتيح (وصولية) */
+:focus-visible { outline: 2px solid rgb(var(--brand) / .75); outline-offset: 2px; border-radius: 4px; }
+/* تفاعل اللمس: ضغطة ناعمة بارتداد خفيف —120ms لتبدو فورية */
+button, a { transition: transform var(--t-fast) var(--ease), opacity var(--t-fast), background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast); }
+button:not(:disabled):active, a:active { transform: scale(.965); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-/* ===== أزرار بتصميم خيال: pill بحدّ وظل خفيف؛ primary للإجراء الرئيسي؛ soft للثانوي ===== */
+/* ===== أزرار خيال: صغيرة، حواف مشدّدة، حد + ظل خفيف ===== */
 @layer components {
-  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-silver bg-snow px-4 text-sm font-medium text-charcoal shadow-soft; } /* لا يقل الزر عن44px */
+  .btn { @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-silver bg-snow px-3 text-caption font-medium text-charcoal shadow-soft; }
   .btn-primary { @apply border-transparent bg-brand text-snow shadow-pop; }
   .btn-soft { @apply border-transparent bg-brand/10 text-brand shadow-none; }
+  .btn-ghost { @apply border-silver bg-transparent text-graphite shadow-none; }
 }
+/* أزرار أيقونات صغيرة موحّدة */
+.icon-btn { @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-smoke transition-colors; }
+.icon-btn:active { @apply bg-mist; }
 /* ===== شريط تمرير رفيع بلون التطبيق ===== */
 * { scrollbar-width: thin; scrollbar-color: rgb(var(--brand) / .4) transparent; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgb(var(--brand) / .35); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand) / .6); }
 /* ===== شاشة الافتتاح ===== */
-#khiyal-splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: rgb(var(--c-fog)); transition: opacity .45s ease, transform .45s ease; }
-#khiyal-splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+#khiyal-splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgb(var(--c-fog)); transition: opacity .3s ease, transform .3s ease; }
+#khiyal-splash.out { opacity: 0; transform: scale(1.03); pointer-events: none; }
 html[data-nosplash] #khiyal-splash { display: none; }
-#khiyal-splash .logo { position: relative; width: 92px; height: 92px; border-radius: 9999px; background: rgb(var(--brand)); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 36px rgb(var(--brand) / .4); animation: sp-pop .7s cubic-bezier(.34, 1.56, .64, 1) both; }
-#khiyal-splash .logo svg { width: 46px; height: 46px; animation: sp-spin 1.2s ease-out both; }
-#khiyal-splash .ring { position: absolute; inset: 0; border-radius: 9999px; border: 2px solid rgb(var(--brand) / .5); animation: sp-ring 1.6s ease-out infinite; }
-#khiyal-splash .ring.r2 { animation-delay: .55s; }
-#khiyal-splash .name { font-size: 34px; font-weight: 700; color: rgb(var(--c-ink)); animation: sp-up .6s .35s ease both; }
-#khiyal-splash .tag { font-size: 14px; color: rgb(var(--c-ink-3)); animation: sp-up .6s .5s ease both; }
-#khiyal-splash .bar { width: 120px; height: 4px; border-radius: 9999px; background: rgb(var(--c-mist)); overflow: hidden; animation: sp-up .6s .65s ease both; }
-#khiyal-splash .bar i { display: block; height: 100%; width: 40%; border-radius: 9999px; background: rgb(var(--brand)); animation: sp-load 1.1s ease-in-out infinite; }
+#khiyal-splash .logo { position: relative; width: 76px; height: 76px; border-radius: 9999px; background: rgb(var(--brand)); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgb(var(--brand) / .38); animation: sp-pop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+#khiyal-splash .logo svg { width: 38px; height: 38px; animation: sp-spin .9s ease-out both; }
+#khiyal-splash .ring { position: absolute; inset: 0; border-radius: 9999px; border: 2px solid rgb(var(--brand) / .5); animation: sp-ring 1.4s ease-out infinite; }
+#khiyal-splash .ring.r2 { animation-delay: .45s; }
+#khiyal-splash .name { font-size: 28px; font-weight: 700; color: rgb(var(--c-ink)); animation: sp-up .45s .2s ease both; }
+#khiyal-splash .tag { font-size: 12px; color: rgb(var(--c-ink-3)); animation: sp-up .45s .3s ease both; }
+#khiyal-splash .bar { width: 96px; height: 3px; border-radius: 9999px; background: rgb(var(--c-mist)); overflow: hidden; animation: sp-up .45s .4s ease both; }
+#khiyal-splash .bar i { display: block; height: 100%; width: 40%; border-radius: 9999px; background: rgb(var(--brand)); animation: sp-load .9s ease-in-out infinite; }
 @keyframes sp-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes sp-spin { from { transform: rotate(-90deg) scale(.4); } to { transform: rotate(0) scale(1); } }
 @keyframes sp-ring { from { transform: scale(1); opacity: .8; } to { transform: scale(2.1); opacity: 0; } }
-@keyframes sp-up { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes sp-up { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes sp-load { 0% { transform: translateX(250%); } 100% { transform: translateX(-150%); } }

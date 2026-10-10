@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { DailyCard } from "./ui";
 import { isBare, refreshWebToken, registerToken, sb, uid } from "@/lib/supabase";
 
-// components/TopBar.tsx — شريط علوي عائم ثابت (لا يختفي بالتمرير): شعار/رجوع + عنوان الصفحة + زر تثبيت التطبيق
+// components/TopBar.tsx — شريط علوي عائم ثابت صغير (لا يختفي بالتمرير): شعار/رجوع + عنوان + إشعارات
 
 const TITLES: [string, string][] = [["/enhance", "التحسين"], ["/lab", "المختبر"], ["/community", "المجتمع"], ["/safety", "الأمان"], ["/new", "منشور جديد"], ["/notifications", "الإشعارات"], ["/requests", "طلبات المتابعة"], ["/settings", "الإعدادات"], ["/search", "بحث"], ["/library", "مكتبتي"], ["/stats", "إحصاءاتي"], ["/profile", "الحساب"], ["/p/", "برومبت"]];
 
@@ -32,25 +32,26 @@ export function TopBar() {
   const title = TITLES.find(([k]) => path.startsWith(k))?.[1] ?? "خيال";
   async function install() { const w = window as any, e = w.__installPrompt; if (!e) return; e.prompt(); await e.userChoice; w.__installPrompt = null; setCan(false); }
   return (
-    <header className="fixed inset-x-0 z-40 flex justify-center px-4 md:hidden" style={{ top: "calc(8px + env(safe-area-inset-top))" }}>
-      <div className="flex h-12 w-full max-w-md items-center gap-2 rounded-full border border-silver bg-snow px-2 shadow-soft relative">
+    <header className="fixed inset-x-0 z-40 flex justify-center px-3 md:hidden" style={{ top: "calc(6px + env(safe-area-inset-top))" }}>
+      <div className="flex h-10 w-full max-w-md items-center gap-1.5 rounded-full border border-silver bg-snow px-1.5 shadow-soft relative">
         <motion.span style={{ scaleX: scrollYProgress, transformOrigin: "right" }} className="absolute inset-x-6 bottom-0 h-0.5 rounded-full bg-brand" />
         {nested
-          ? <button onClick={() => r.back()} aria-label="رجوع" className="flex h-10 w-10 items-center justify-center rounded-full active:bg-mist"><ChevronRight size={22} /></button>
-          : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-snow"><Sparkles size={18} /></span>}
-        <span className="flex-1 truncate px-1 text-base font-semibold">{title}</span>
-        {!path.startsWith("/notifications") && <Link href="/notifications" aria-label="الإشعارات" className="relative flex h-11 w-11 items-center justify-center rounded-full bg-mist text-charcoal active:scale-95"><Bell size={19} />{unread > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-brand" />}</Link>}
-        {can && <button onClick={install} className="flex min-h-10 items-center gap-1 rounded-full bg-brand/10 px-3 text-sm font-medium text-brand"><Download size={16} />تثبيت</button>}
+          ? <button onClick={() => r.back()} aria-label="رجوع" className="flex h-8 w-8 items-center justify-center rounded-full active:bg-mist"><ChevronRight size={18} /></button>
+          : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-snow"><Sparkles size={15} /></span>}
+        <span className="flex-1 truncate px-1 text-caption font-semibold">{title}</span>
+        {!path.startsWith("/notifications") && <Link href="/notifications" aria-label="الإشعارات" className="relative flex h-8 w-8 items-center justify-center rounded-full bg-mist text-charcoal active:scale-95"><Bell size={15} />{unread > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand" />}</Link>}
+        {can && <button onClick={install} className="flex min-h-7 items-center gap-1 rounded-full bg-brand/10 px-2 text-caption font-medium text-brand"><Download size={13} />تثبيت</button>}
       </div>
     </header>
   );
 }
 
-// components/BottomNav.tsx — شريط سفلي عائم 64px + مؤشر متحرك layoutId + FAB + نقطة غير مقروء (Realtime)
+// components/BottomNav.tsx — شريط سفلي عائم:4 أزرار (الرئيسية · استكشف · التحسين · ملفي) + زر «أنشئ» العائم =5
 
 const items = [
   { href: "/", icon: Home, label: "الرئيسية" },
   { href: "/search", icon: Compass, label: "استكشف" },
+  { href: "/enhance", icon: Sparkles, label: "التحسين" },
   { href: "/profile/me", icon: User, label: "ملفي" },
 ];
 
@@ -61,21 +62,21 @@ export function BottomNav() {
     const active = i.href === "/" ? path === "/" : path.startsWith(i.href);
     return (
       <li key={i.href} className="relative">
-        <Link href={i.href} aria-label={i.label} className={`relative flex h-11 items-center justify-center gap-1.5 rounded-full ${active ? "px-3 text-brand" : "w-11 text-smoke"}`}>
-          {active && <motion.span layoutId="nav-ind" transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute inset-0 rounded-full bg-brand/10" />}
-          <i.icon size={22} className="relative" />
-          {active && <span className="relative text-caption font-semibold">{i.label}</span>}
+        <Link href={i.href} aria-label={i.label} className={`relative flex h-9 items-center justify-center gap-1 rounded-full ${active ? "px-2 text-brand" : "w-9 text-smoke"}`}>
+          {active && <motion.span layoutId="nav-ind" transition={{ type: "spring", stiffness: 420, damping: 34 }} className="absolute inset-0 rounded-full bg-brand/10" />}
+          <i.icon size={18} className="relative" />
+          {active && <span className="relative text-[10px] font-semibold">{i.label}</span>}
         </Link>
       </li>
     );
   };
   return (
-    <nav className="fixed inset-x-0 z-40 flex justify-center px-4 md:hidden" style={{ bottom: "calc(16px + env(safe-area-inset-bottom))" }}>
-      <ul className="relative flex h-14 w-full max-w-md items-center justify-around rounded-full border border-silver bg-snow px-4 shadow-soft">
+    <nav className="fixed inset-x-0 z-40 flex justify-center px-3 md:hidden" style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}>
+      <ul className="relative flex h-12 w-full max-w-md items-center justify-around rounded-full border border-silver bg-snow px-2 shadow-soft">
         {items.slice(0, 2).map(cell)}
-        <li className="relative w-16">
-          <Link href="/enhance" aria-label="أنشئ" className="absolute -top-8 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full border-4 border-snow bg-brand text-snow shadow-pop active:scale-95"><Plus size={26} /></Link>
-          <span className="block pt-1 text-center text-caption font-semibold text-brand">أنشئ</span>
+        <li className="relative w-14">
+          <Link href="/new" aria-label="أنشئ برومبت" className="absolute -top-6 left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-snow bg-brand text-snow shadow-pop active:scale-95"><Plus size={22} /></Link>
+          <span className="block pt-1 text-center text-[10px] font-semibold text-brand">أنشئ</span>
         </li>
         {items.slice(2).map(cell)}
       </ul>
@@ -83,38 +84,38 @@ export function BottomNav() {
   );
 }
 
-// components/Sidebar.tsx — قائمة جانبية لشاشات الويب (≥768px)
+// components/Sidebar.tsx — قائمة جانبية مدمجة لشاشات الويب (≥768px)
 
 const LINKS = [["/", "الرئيسية", Home], ["/search", "استكشف", Compass], ["/enhance", "التحسين", Sparkles], ["/lab", "المختبر", FlaskConical], ["/community", "المجتمع", Users], ["/library", "مكتبتي", BookMarked], ["/stats", "إحصاءاتي", BarChart3], ["/notifications", "الإشعارات", Bell], ["/profile/me", "حسابي", User], ["/settings", "الإعدادات", Settings], ["/safety", "الأمان", ShieldCheck]] as const;
 
 export function Sidebar() {
   const path = usePathname();
   return (
-    <nav className="sticky top-4 hidden h-[calc(100dvh-2rem)] flex-col gap-1 self-start overflow-y-auto py-4 md:flex [scrollbar-width:none]">
-      <Link href="/" className="mb-4 flex items-center gap-2 px-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-snow shadow-pop"><Sparkles size={20} /></span><span className="text-xl font-bold">خيال</span>
+    <nav className="sticky top-4 hidden h-[calc(100dvh-2rem)] flex-col gap-0.5 self-start overflow-y-auto py-4 [scrollbar-width:none] md:flex">
+      <Link href="/" className="mb-3 flex items-center gap-2 px-3">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-snow shadow-pop"><Sparkles size={16} /></span><span className="text-lg font-bold">خيال</span>
       </Link>
       {LINKS.map(([href, label, Icon]) => {
         const on = href === "/" ? path === "/" : path.startsWith(href);
-        return <Link key={href} href={href} className={`flex min-h-12 items-center gap-3 rounded-full px-4 text-base transition-colors ${on ? "bg-brand/10 font-semibold text-brand" : "text-graphite hover:bg-mist"}`}><Icon size={22} />{label}</Link>;
+        return <Link key={href} href={href} className={`flex min-h-9 items-center gap-2.5 rounded-full px-3 text-caption transition-colors ${on ? "bg-brand/10 font-semibold text-brand" : "text-graphite hover:bg-mist"}`}><Icon size={17} />{label}</Link>;
       })}
-      <Link href="/new" className="btn btn-primary mt-3 !min-h-12"><Plus size={18} />منشور جديد</Link>
+      <Link href="/new" className="btn btn-primary mt-2 !min-h-9"><Plus size={15} />منشور جديد</Link>
     </nav>
   );
 }
 
-// components/Shell.tsx — إطار التطبيق: جوال (شريطان عائمان) + ويب (قائمة جانبية + عمود المحتوى + عمود التحدي)
+// components/Shell.tsx — إطار التطبيق: جوال (شريطان عائمان صغيران) + ويب (قائمة جانبية + عمود ضيّق + عمود جانبي)
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const bare = isBare(usePathname());
-  if (bare) return <div className="mx-auto max-w-[1200px] px-5 md:px-8" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>{children}</div>;
+  if (bare) return <div className="mx-auto max-w-[1120px] px-4 md:px-6" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>{children}</div>;
   return (
     <>
       <TopBar />
-      <div className="mx-auto md:grid md:max-w-[1180px] md:grid-cols-[230px_minmax(0,640px)] md:justify-center md:gap-6 md:px-6 lg:grid-cols-[230px_minmax(0,640px)_300px]">
+      <div className="mx-auto md:grid md:max-w-[1040px] md:grid-cols-[190px_minmax(0,560px)] md:justify-center md:gap-5 md:px-5 lg:grid-cols-[190px_minmax(0,560px)_250px]">
         <Sidebar />
-        <div className="px-5 md:px-0" style={{ paddingTop: "calc(var(--top) + env(safe-area-inset-top))", paddingBottom: "calc(var(--bottom) + env(safe-area-inset-bottom))" }}>{children}</div>
-        <aside className="sticky top-4 hidden h-fit flex-col gap-4 self-start py-4 lg:flex">
+        <div className="min-w-0 px-4 md:px-0" style={{ paddingTop: "calc(var(--top) + env(safe-area-inset-top))", paddingBottom: "calc(var(--bottom) + env(safe-area-inset-bottom))" }}>{children}</div>
+        <aside className="sticky top-4 hidden h-fit flex-col gap-3 self-start py-4 lg:flex">
           <DailyCard />
           <p className="px-2 text-caption text-smoke">خيال — حسّن برومبتاتك، شاركها، وتابع المبدعين.</p>
         </aside>
@@ -124,7 +125,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-// components/Providers.tsx — تخفيف الحركة + لون التطبيق + تهيئة ذاتية لقاعدة البيانات (تظهر شاشة تقدّم/إرشاد عند اللزوم)
+// components/Providers.tsx — تخفيف الحركة + لون التطبيق + تهيئة ذاتية لقاعدة البيانات (تظهر شاشة تقدّم عند اللزوم)
 
 const MISSING = /schema cache|Could not find the (table|function)|relation .* does not exist/i;
 type Phase = "idle" | "working" | "done" | "nourl" | "failed";
@@ -162,19 +163,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {children}
       {show && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-fog px-5" role="alert">
-          <div className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-silver bg-snow p-6 shadow-soft">
+          <div className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-silver bg-snow p-5 shadow-soft">
             {phase === "working" || phase === "done" ? (<>
-              <span className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-silver border-t-brand" />
-              <h2 className="text-center text-xl font-bold">{phase === "done" ? "اكتملت التهيئة ✓" : "جارٍ تهيئة قاعدة البيانات تلقائياً…"}</h2>
-              <p className="text-center text-sm text-graphite">لحظات ثم يُعاد تحميل التطبيق.</p>
+              <span className="mx-auto h-8 w-8 animate-spin rounded-full border-[3px] border-silver border-t-brand" />
+              <h2 className="text-center text-base font-bold">{phase === "done" ? "اكتملت التهيئة ✓" : "جارٍ تهيئة قاعدة البيانات تلقائياً…"}</h2>
+              <p className="text-center text-caption text-graphite">لحظات ثم يُعاد تحميل التطبيق.</p>
             </>) : (<>
-              <h2 className="text-2xl font-bold">التطبيق قيد الإعداد</h2>
-              {msg && <p dir="auto" className="whitespace-pre-wrap rounded-xl bg-brand/5 p-3 text-caption text-charcoal">{msg}</p>}
+              <h2 className="text-lg font-bold">التطبيق قيد الإعداد</h2>
+              {msg && <p dir="auto" className="whitespace-pre-wrap rounded-xl bg-brand/5 p-2.5 text-caption text-charcoal">{msg}</p>}
               {phase === "nourl" || phase === "idle" ? (
-                <p className="text-sm text-graphite">للتهيئة التلقائية بلا لصق SQL: أضف <b dir="ltr">SUPABASE_DB_URL</b> في Vercel (Supabase ← Connect ← Session pooler) ثم Redeploy، وسيهيّئ التطبيق قاعدة بياناته بنفسه عند فتحه.</p>
-              ) : <p className="text-sm text-graphite">تعذّرت التهيئة التلقائية. راجع الرسالة أعلاه أو استخدم لوحة الفحص.</p>}
-              <Link href="/admin" className="btn btn-primary">فتح لوحة الفحص (للمالك)</Link>
-              <button onClick={() => { setPhase("working"); bootstrap(true); }} className="btn">إعادة المحاولة</button>
+                <p className="text-caption text-graphite">للتهيئة التلقائية بلا لصق SQL: أضف <b dir="ltr">SUPABASE_DB_URL</b> في Vercel ثم Redeploy، وسيهيّئ التطبيق قاعدة بياناته عند فتحه.</p>
+              ) : <p className="text-caption text-graphite">تعذّرت التهيئة التلقائية. اضغط إعادة المحاولة أو راجع سجلات المشروع.</p>}
+              <button onClick={() => { setPhase("working"); bootstrap(true); }} className="btn btn-primary">إعادة المحاولة</button>
             </>)}
           </div>
         </div>
@@ -199,7 +199,7 @@ export function PwaBoot() {
     const vib = navigator.vibrate?.bind(navigator);
     if (vib) (navigator as any).vibrate = (p: any) => (localStorage.getItem("khiyal:haptics") === "0" ? false : vib(p));
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").then(() => { if (localStorage.getItem("khiyal:push") === "1" && Notification.permission === "granted") refreshWebToken().catch(() => {}); }).catch(() => {});
-    w.khiyalRegisterToken = (t: string) => registerToken(t, "android"); // يستدعيها تطبيق أندرويد بالتوكن
+    w.khiyalRegisterToken = (t: string) => registerToken(t, "android"); // تستدعيها تطبيق أندرويد بالتوكن
     w.khiyalOpen = (p: string) => r.push(p);                              // رابط عميق من إشعار أصلي
     w.KhiyalNative?.requestToken?.();                                      // عند التشغيل
     const { data: sub } = sb.auth.onAuthStateChange((_e, s) => { if (s) w.KhiyalNative?.requestToken?.(); }); // وبعد تسجيل الدخول

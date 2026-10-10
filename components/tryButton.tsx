@@ -9,10 +9,10 @@ import { VarsSheet } from "./ui";
 export function TryButton({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const vars = extractVars(text);
-  if (!vars.length) return <Link href={`/enhance?text=${encodeURIComponent(text)}`} className="btn btn-primary min-h-11 flex-1"><Sparkles size={16} />جرّب الآن</Link>;
+  if (!vars.length) return <Link href={`/enhance?text=${encodeURIComponent(text)}`} className="btn btn-primary !min-h-9 flex-1"><Sparkles size={16} />جرّب الآن</Link>;
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn btn-primary min-h-11 flex-1"><Braces size={16} />عبّئ المتغيرات وجرّب</button>
+      <button onClick={() => setOpen(true)} className="btn btn-primary !min-h-9 flex-1"><Braces size={16} />عبّئ المتغيرات وجرّب</button>
       <VarsSheet text={text} open={open} onClose={() => setOpen(false)} />
     </>
   );

@@ -1,4 +1,4 @@
-// tailwind.config.ts — رموز DESIGN.md فقط: لا ظلال، لا تدرجات
+// tailwind.config.ts — رموز DESIGN.md: واجهة مضغوطة، حواف مشدّدة، لا تدرجات
 import type { Config } from "tailwindcss";
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -9,13 +9,16 @@ export default {
       charcoal: "rgb(var(--c-ink) / <alpha-value>)", graphite: "rgb(var(--c-ink-2) / <alpha-value>)", smoke: "rgb(var(--c-ink-3) / <alpha-value>)", ash: "rgb(var(--c-ash) / <alpha-value>)",
       brand: "rgb(var(--brand) / <alpha-value>)", emerald: "rgb(var(--brand) / <alpha-value>)", cobalt: "rgb(var(--brand) / <alpha-value>)",
     },
-    fontSize: { // حد أدنى16px للنص الأساسي و13px للتسمية (وصولية)
-      caption: ["13px", "1.55"], sm: ["14px", "1.65"], base: ["16px", "1.7"], lg: ["17px", "1.6"],
-      xl: ["18px", "1.5"], "2xl": ["20px", "1.45"], "3xl": ["28px", "1.35"], "4xl": ["32px", "1.3"], "5xl": ["40px", "1.15"],
+    fontSize: { // أحجام صغيرة متراصة (النص الأساسي 13.5px، التسمية 11px)
+      caption: ["11px", "1.5"], sm: ["12px", "1.6"], base: ["13.5px", "1.65"], lg: ["15px", "1.55"],
+      xl: ["16px", "1.45"], "2xl": ["18px", "1.4"], "3xl": ["24px", "1.3"], "4xl": ["28px", "1.25"], "5xl": ["34px", "1.15"],
     },
-    borderRadius: { none: "0", link: "6px", xl: "12px", full: "9999px" },
-    boxShadow: { none: "none", soft: "0 1px 2px rgb(0 0 0 / .04), 0 6px 20px rgb(0 0 0 / .06)", pop: "0 8px 24px rgb(var(--brand) / .35)" },
-    extend: { fontFamily: { sans: ["var(--font-sans)", "Tajawal", "system-ui", "sans-serif"] } },
+    borderRadius: { none: "0", link: "4px", xl: "9px", full: "9999px" },
+    boxShadow: { none: "none", soft: "0 1px 2px rgb(0 0 0 / .04), 0 4px 14px rgb(0 0 0 / .05)", pop: "0 6px 18px rgb(var(--brand) / .35)" },
+    extend: {
+      fontFamily: { sans: ["var(--font-sans)", "Tajawal", "system-ui", "sans-serif"] },
+      transitionTimingFunction: { out: "cubic-bezier(.2,.8,.3,1)" },
+    },
   },
   corePlugins: { backdropBlur: false, backdropFilter: false, backgroundImage: false },
 } satisfies Config;

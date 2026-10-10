@@ -1,7 +1,7 @@
 "use client";
-// app/profile/[id]/page.tsx — بروفايل: غلاف، إحصائيات، شبكة 3 أعمدة، متابعة فورية، ⚙️ + إصدار (6 نقرات → /admin)
-import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+// app/profile/[id]/page.tsx — بروفايل مرتّب: غلاف ← أفاتار ← هوية ← إحصاءات ← أزرار ← شارات ← منشورات
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Award, BarChart3, BookMarked, Camera, Flame, Settings, Share2 } from "lucide-react";
@@ -13,10 +13,10 @@ type Cell = { id: string; body: string; enhanced: string | null; images: { url: 
 const SEL = "id,body,enhanced,images";
 
 export default function Profile() {
-  const { id } = useParams<{ id: string }>(), router = useRouter();
+  const { id } = useParams<{ id: string }>();
   const [me, setMe] = useState<string | undefined>(), [p, setP] = useState<Prof | null>(null), [cells, setCells] = useState<Cell[]>([]), [saved, setSaved] = useState<Cell[]>([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
-  const [taps, setTaps] = useState(0), timer = useRef<any>(), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null);
+  const [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null);
   async function change(kind: "cover_url" | "avatar_url", f?: File) {
     if (!f || !me) return; setUp(kind);
     try {
@@ -113,61 +113,95 @@ export default function Profile() {
       } catch { /* أُلغيت المشاركة */ }
     }, "image/png");
   }
-  function tapVersion() {
-    clearTimeout(timer.current); const n = taps + 1; navigator.vibrate?.(6);
-    if (n >= 6) { setTaps(0); router.push("/admin"); return; }
-    setTaps(n); timer.current = setTimeout(() => setTaps(0), 2000);
+  async function shareProfile() {
+    const url = `${location.origin}/profile/${pid}`;
+    try { if (navigator.share) await navigator.share({ title: p?.display_name ?? "خيال", url }); else { await navigator.clipboard.writeText(url); toast("نُسخ رابط الحساب"); } } catch {}
   }
 
   if (ready && !p) return (
-    <div className="flex flex-col items-center gap-4 py-20 text-center">
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-graphite">{own ? "لم يكتمل إعداد حسابك بعد." : "الحساب غير موجود"}</p>
       {own && <Link href="/setup" className="btn btn-primary">إكمال الإعداد</Link>}
     </div>
   );
   const hidden = !!p?.is_private && !own && !fol, list = tab === "saved" ? saved : cells;
   return (
-    <main className="flex flex-col gap-5 pt-4">
-      <header className="relative flex flex-col gap-3">
-        <div className="relative h-28 overflow-hidden rounded-xl bg-brand/10">{p?.cover_url && <img src={p.cover_url} alt="" className="h-full w-full object-cover" />}
-          {own && <label className="absolute right-2 top-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-snow text-charcoal shadow-soft active:scale-95">{up === "cover_url" ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-silver border-t-charcoal" /> : <Camera size={18} />}<input type="file" accept="image/*" hidden onChange={(e) => change("cover_url", e.target.files?.[0])} /></label>}</div>
-        {own && (
-          <div className="absolute left-2 top-2 flex flex-col items-center gap-1">
-            <Link href="/settings" aria-label="الإعدادات" className="flex h-10 w-10 items-center justify-center rounded-full border border-silver bg-snow text-charcoal"><Settings size={20} /></Link>
-            <button onClick={tapVersion} className="relative flex items-center gap-1 rounded-full bg-snow px-2 text-[11px] text-smoke" dir="ltr">
-              <svg width="14" height="14" viewBox="0 0 20 20" style={{ opacity: taps ? 0.4 + taps * 0.1 : 0 }} className="-rotate-90"><circle cx="10" cy="10" r="8" fill="none" stroke="#e5e7eb" strokeWidth="2" /><circle cx="10" cy="10" r="8" fill="none" stroke="#333" strokeWidth="2" strokeDasharray={50.3} strokeDashoffset={50.3 * (1 - taps / 6)} /></svg>
-              {taps > 0 && <motion.span key={taps} initial={{ scale: 1.6, opacity: 0.6 }} animate={{ scale: 1, opacity: 0 }} className="absolute left-1 h-3.5 w-3.5 rounded-full border border-charcoal" />}
-              {VERSION}
-            </button>
-          </div>)}
-        <div className="relative z-10 -mt-12 flex items-end justify-between px-1">
-          <div className="relative h-20 w-20"><div className="h-full w-full overflow-hidden rounded-full border-2 border-snow bg-mist shadow-soft">{p?.avatar_url && <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />}</div>
-            {own && <label className="absolute -bottom-1 -left-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-brand text-snow shadow-pop active:scale-95">{up === "avatar_url" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-snow/40 border-t-snow" /> : <Camera size={14} />}<input type="file" accept="image/*" hidden onChange={(e) => change("avatar_url", e.target.files?.[0])} /></label>}</div>
-          <div className="flex items-center gap-1"><button aria-label="مشاركة الحساب" className="btn !px-3" onClick={async () => { const url = `${location.origin}/profile/${pid}`; try { if (navigator.share) await navigator.share({ title: p?.display_name ?? "خيال", url }); else { await navigator.clipboard.writeText(url); toast("نُسخ رابط الحساب"); } } catch {} }}><Share2 size={16} /></button>{own && badges && <button aria-label="مشاركة إنجاز" title="شارك صورة إنجازك" onClick={shareCard} className="btn !px-3"><Award size={16} className="text-brand" /></button>}{!own && <button onClick={block} className="btn">{blocked ? "إلغاء الحظر" : "حظر"}</button>}
-          {own ? <><Link href="/library" className="btn whitespace-nowrap"><BookMarked size={16} />مكتبتي</Link><Link href="/settings" className="btn btn-primary whitespace-nowrap">تعديل</Link></>
-            : <button onClick={follow} className={`min-h-10 rounded-full px-5 text-sm font-medium active:opacity-70 ${fol || pend ? "border border-silver text-charcoal" : "bg-brand text-snow"}`}>{fol ? "أتابعه" : pend ? "تم الطلب" : "متابعة"}</button>}</div>
+    <main className="flex flex-col gap-3 pt-3">
+      <header className="flex flex-col gap-2.5">
+        {/*1 — الغلاف */}
+        <div className="relative h-24 overflow-hidden rounded-xl bg-brand/10">
+          {p?.cover_url && <img src={p.cover_url} alt="" className="h-full w-full object-cover" />}
+          {own && <>
+            <label className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-snow text-charcoal shadow-soft active:scale-95">{up === "cover_url" ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-silver border-t-charcoal" /> : <Camera size={15} />}<input type="file" accept="image/*" hidden onChange={(e) => change("cover_url", e.target.files?.[0])} /></label>
+            <div className="absolute left-2 top-2 flex items-center gap-1">
+              <Link href="/settings" aria-label="الإعدادات" className="flex h-8 w-8 items-center justify-center rounded-full border border-silver bg-snow text-charcoal shadow-soft active:scale-95"><Settings size={15} /></Link>
+              <span dir="ltr" className="rounded-full bg-snow/90 px-2 py-0.5 text-[10px] text-smoke shadow-soft">{VERSION}</span>
+            </div>
+          </>}
         </div>
-        <div><h1 className="text-xl font-semibold">{p?.display_name ?? <span className="inline-block h-6 w-32 animate-pulse rounded-full bg-mist" />}</h1><p className="text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>{!!p?.streak && p.streak > 1 && <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-caption font-medium text-brand"><Flame size={13} />{p.streak} أيام متتالية</span>}{badges && <span className="mt-1 me-1 inline-flex items-center gap-1 rounded-full bg-mist px-2 py-0.5 text-caption font-semibold text-graphite">المستوى {levelOf(badges)}</span>}</div>
-        {p?.bio && <p className="max-w-[65ch] text-sm text-graphite">{p.bio}</p>}
-        {!!p?.links?.length && <div className="flex flex-wrap gap-x-4">{p.links.map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer nofollow" dir="ltr" className="flex min-h-10 items-center rounded-link text-sm text-cobalt">{l.replace(/^https?:\/\//, "")}</a>)}</div>}
-        {own && badges && <p className="rounded-xl bg-brand/5 px-3 py-2 text-caption font-medium text-brand">{nextStep(badges)}</p>}
-        <dl className="flex gap-8 text-center">{([["prompts", "برومبت"], ["followers", "متابِع"], ["following", "يتابع"]] as const).map(([k, l]) => <div key={k}><dt className="text-lg font-semibold tabular-nums">{stats[k]}</dt><dd className="text-caption text-smoke">{l}</dd></div>)}</dl>
+
+        {/*2 — الأفاتار + مشاركة سريعة */}
+        <div className="relative -mt-8 flex items-end justify-between px-1">
+          <div className="relative h-16 w-16">
+            <div className="h-full w-full overflow-hidden rounded-full border-2 border-snow bg-mist shadow-soft">{p?.avatar_url && <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />}</div>
+            {own && <label className="absolute -bottom-1 -left-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-brand text-snow shadow-pop active:scale-95">{up === "avatar_url" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-snow/40 border-t-snow" /> : <Camera size={13} />}<input type="file" accept="image/*" hidden onChange={(e) => change("avatar_url", e.target.files?.[0])} /></label>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={shareProfile} aria-label="مشاركة الحساب" className="icon-btn border border-silver bg-snow shadow-soft"><Share2 size={15} /></button>
+            {own && badges && <button onClick={shareCard} aria-label="مشاركة صورة إنجاز" title="شارك صورة إنجازك" className="icon-btn border border-silver bg-snow shadow-soft"><Award size={15} className="text-brand" /></button>}
+          </div>
+        </div>
+
+        {/*3 — الهوية */}
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <h1 className="text-base font-semibold">{p?.display_name ?? <span className="inline-block h-5 w-28 animate-pulse rounded-full bg-mist" />}</h1>
+          {badges && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold text-brand">المستوى {levelOf(badges)}</span>}
+          {!!p?.streak && p.streak > 1 && <span className="inline-flex items-center gap-1 rounded-full bg-mist px-2 py-0.5 text-[10px] font-medium text-graphite"><Flame size={11} />{p.streak} يوم</span>}
+        </div>
+        <p className="px-1 text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>
+
+        {/*4 — نبذة وروابط */}
+        {p?.bio && <p className="max-w-[65ch] px-1 text-caption text-graphite">{p.bio}</p>}
+        {!!p?.links?.length && <div className="flex flex-wrap gap-x-3 px-1">{p.links.map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer nofollow" dir="ltr" className="flex min-h-7 items-center rounded-link text-caption text-cobalt">{l.replace(/^https?:\/\//, "")}</a>)}</div>}
+
+        {/*5 — الإحصاءات */}
+        <dl className="grid grid-cols-3 rounded-xl border border-silver bg-snow py-1.5 text-center shadow-soft">
+          {([["prompts", "برومبت"], ["followers", "متابِع"], ["following", "يتابع"]] as const).map(([k, l], i) => (
+            <div key={k} className={`flex flex-col ${i ? "border-e border-silver" : ""}`}>
+              <dt className="text-base font-semibold tabular-nums">{stats[k]}</dt>
+              <dd className="text-[10px] text-smoke">{l}</dd>
+            </div>))}
+        </dl>
+
+        {/*6 — الأزرار (أقواس واضحة: إجراء أساسي + ثانوي) */}
+        <div className="flex gap-1.5">
+          {own ? (<>
+            <Link href="/settings" className="btn btn-primary flex-1">تعديل الحساب</Link>
+            <Link href="/library" className="btn"><BookMarked size={14} />مكتبتي</Link>
+            <Link href="/stats" className="btn"><BarChart3 size={14} />إحصاءاتي</Link>
+          </>) : (<>
+            <button onClick={follow} className={`btn flex-1 ${fol || pend ? "btn-ghost" : "btn-primary"}`}>{fol ? "أتابعه" : pend ? "تم الطلب" : "متابعة"}</button>
+            <button onClick={block} className="btn">{blocked ? "إلغاء الحظر" : "حظر"}</button>
+          </>)}
+        </div>
+
+        {/*7 — الخطوة التالية + الشارات */}
+        {own && badges && <p className="rounded-xl bg-brand/5 px-2.5 py-1.5 text-caption font-medium text-brand">{nextStep(badges)}</p>}
         {!hidden && badges && <BadgeStrip s={badges} own={own} />}
-        {own && <Link href="/stats" className="btn btn-soft self-start"><BarChart3 size={16} />إحصاءاتي</Link>}
       </header>
 
       {own && <div className="flex gap-1 rounded-full bg-mist p-1">{(["posts", "saved"] as const).map((t) => (
-        <button key={t} onClick={() => setTab(t)} className="relative min-h-10 flex-1 rounded-full text-sm font-medium">
-          {tab === t && <motion.span layoutId="prof-tab" transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute inset-0 rounded-full bg-snow shadow-soft" />}
+        <button key={t} onClick={() => setTab(t)} className="relative min-h-8 flex-1 rounded-full text-caption font-medium">
+          {tab === t && <motion.span layoutId="prof-tab" transition={{ type: "spring", stiffness: 420, damping: 34 }} className="absolute inset-0 rounded-full bg-snow shadow-soft" />}
           <span className={`relative ${tab === t ? "text-brand" : "text-smoke"}`}>{t === "posts" ? "منشوراتي" : "المحفوظة"}</span>
         </button>))}</div>}
 
-      {hidden ? <p className="py-12 text-center text-graphite">هذا الحساب خاص. تابعه لترى منشوراته.</p>
+      {hidden ? <p className="py-10 text-center text-graphite">هذا الحساب خاص. تابعه لترى منشوراته.</p>
         : !ready ? <div className="grid grid-cols-3 gap-1">{Array.from({ length: 9 }).map((_, i) => <div key={i} className="aspect-square animate-pulse rounded-link bg-mist" />)}</div>
-        : !list.length ? <p className="py-12 text-center text-graphite">لا شيء هنا بعد.</p>
+        : !list.length ? <p className="py-10 text-center text-graphite">لا شيء هنا بعد.</p>
         : <div className="grid grid-cols-3 gap-1">{list.map((c) => (
           <Link key={c.id} href={`/p/${c.id}`} className="aspect-square overflow-hidden rounded-link border border-silver bg-fog">
-            {c.images?.[0] ? <img src={thumb(c.images[0].url, 400)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <p className="line-clamp-5 p-2 text-caption text-graphite">{c.enhanced ?? c.body}</p>}
+            {c.images?.[0] ? <img src={thumb(c.images[0].url, 400)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <p className="line-clamp-6 p-1.5 text-[10px] leading-snug text-graphite">{c.enhanced ?? c.body}</p>}
           </Link>))}</div>}
     </main>
   );
