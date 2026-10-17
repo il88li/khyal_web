@@ -1,12 +1,12 @@
 "use client";
 // components/ui.tsx — المكوّنات المشتركة: BottomSheet, Toaster, CopyButton, Lightbox, Skeleton, Gallery, Comments, Splash, VarsSheet
 import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from "framer-motion";
-import { Copy, Flame, Send, Target, X } from "@/components/icons";
+import { AlertTriangle, CheckCircle, Copy, Flame, Info, Send, Target, X } from "@/components/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ago, burst, extractVars, fillVars, sb, thumb, toast, uid } from "@/lib/supabase";
+import { ago, burst, extractVars, fillVars, sb, thumb, toast, uid, type Tone } from "@/lib/supabase";
 import { challengeOf } from "@/types";
 import type { Img } from "@/types";
 
@@ -158,33 +158,46 @@ export function Modal({
    Toaster — تنبيه علوي: خلفية حبرية + نص كريمي
    ════════════════════════════════════════════════════════════════ */
 export function Toaster() {
-  const [m, setM] = useState("");
+  const [items, setItems] = useState<{ id: number; msg: string; tone: Tone }[]>([]);
   useEffect(() => {
-    let t: any;
+    let seq = 0;
     const h = (e: Event) => {
-      setM((e as CustomEvent).detail);
-      clearTimeout(t);
-      t = setTimeout(() => setM(""), 2000);
+      const d = (e as CustomEvent).detail;
+      const msg = typeof d === "string" ? d : d?.msg;
+      const tone: Tone = typeof d === "string" ? "info" : d?.tone ?? "info";
+      if (!msg) return;
+      const id = ++seq;
+      setItems((a) => [...a.slice(-2), { id, msg, tone }]);
+      setTimeout(() => setItems((a) => a.filter((x) => x.id !== id)), tone === "error" ? 3400 : 2200);
     };
     window.addEventListener("khiyal:toast", h);
     return () => window.removeEventListener("khiyal:toast", h);
   }, []);
+  const ICONS = { info: Info, success: CheckCircle, error: AlertTriangle } as const;
+  const COLORS = { info: "text-snow/70", success: "text-[rgb(var(--ok))]", error: "text-[rgb(var(--danger))]" } as const;
   return (
-    <AnimatePresence>
-      {m && (
-        <motion.div
-          role="status"
-          initial={{ y: -12, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -12, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 500, damping: 38 }}
-          className="fixed inset-x-5 z-[80] mx-auto flex max-w-md items-center gap-2 rounded-xl bg-charcoal px-4 py-2.5 text-base font-medium text-snow shadow-lift"
-          style={{ top: "calc(12px + env(safe-area-inset-top))" }}
-        >
-          {m}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="pointer-events-none fixed inset-x-4 z-[80] mx-auto flex max-w-[420px] flex-col items-center gap-2" style={{ top: "calc(12px + env(safe-area-inset-top))" }}>
+      <AnimatePresence initial={false}>
+        {items.map((t) => {
+          const Icon = ICONS[t.tone];
+          return (
+            <motion.div
+              key={t.id}
+              role={t.tone === "error" ? "alert" : "status"}
+              aria-live={t.tone === "error" ? "assertive" : "polite"}
+              initial={{ y: -12, opacity: 0, scale: 0.97 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -12, opacity: 0, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 500, damping: 38 }}
+              className="pointer-events-auto flex w-full items-center gap-2.5 rounded-xl bg-charcoal px-4 py-2.5 text-base font-medium text-snow shadow-lift"
+            >
+              <Icon size={17} className={`shrink-0 ${COLORS[t.tone]}`} aria-hidden />
+              <span className="min-w-0 flex-1 leading-snug">{t.msg}</span>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
   );
 }
 

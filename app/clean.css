@@ -215,3 +215,28 @@ html.dark .feed-tab-pill {
 @media (prefers-reduced-motion: reduce) {
   .prompt-card, .feed-cat, .feed-tab-pill { transition: none !important; }
 }
+
+/* ── أداء الفيد الطويل: تخطّي رسم البطاقات خارج الشاشة مع حفظ ارتفاع تقديري ── */
+.prompt-card { content-visibility: auto; contain-intrinsic-size: auto 440px; }
+
+/* ── هيكل تحميل البطاقة (promptCard): مسافات موحّدة مع البطاقة الحقيقية ── */
+.prompt-card-skel { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
+.prompt-card-skel .skel { border-radius: 8px; }
+
+/* ── شريط انقطاع الاتصال ── */
+.offline-bar {
+  position: fixed;
+  left: 0; right: 0; margin: 0 auto;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 95;
+  width: max-content; max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgb(var(--c-ink)); color: rgb(var(--c-snow));
+  font-size: 13px; font-weight: 600; line-height: 1.5;
+  box-shadow: var(--float);
+}
+.offline-bar svg { flex: 0 0 auto; color: rgb(var(--gold)); }
+@media (min-width: 769px) { .offline-bar { bottom: calc(24px + env(safe-area-inset-bottom)); } }
+@media (prefers-reduced-motion: reduce) { .offline-bar { transition: none !important; } }

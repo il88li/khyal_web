@@ -54,6 +54,8 @@ const nextConfig = {
   // pg يحتاج أن يبقى خارج حزمة Edge (يستخدم في التهيئة الذاتية)
   experimental: {
     serverComponentsExternalPackages: ["pg"],
+    // tree-shaking أفضل للحزم ذات الملف الواحد — يقلّل حجم حزمة العميل
+    optimizePackageImports: ["framer-motion"],
   },
 
   // ⚠️ حرج: فعّل ESLint في البناء — 10+ تعليقات `eslint-disable-line` يجب مراجعتها
@@ -123,12 +125,8 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // شفافية المكوّنات: قائمة الحزم القابلة للـ tree-shaking
-  modularizeImports: {
-    "lucide-react": {
-      transform: "lucide-react/dist/esm/icons/{{kebabCase member}}",
-    },
-  },
+  // لا نُصدّر خرائط المصدر للإنتاج — أسرع وأصغر ولا تكشف الكود
+  productionBrowserSourceMaps: false,
 
   // إخفاء رأس `X-Powered-By`
   poweredByHeader: false,

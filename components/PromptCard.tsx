@@ -1,16 +1,19 @@
 "use client";
 // components/PromptCard.tsx — محتوى أولًا: رأس هادئ، نص مقروء، وأفعال واضحة
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark, Braces, Copy, GitFork, Heart, MessageCircle,
   Share2, Sparkles, UserPlus, Check, ChevronDown } from "@/components/icons";
-import { ago, burst, extractVars, fmt, sb, toast, uid, useCategories } from "@/lib/supabase";
+import { ago, burst, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
 import { BottomSheet, Comments, VarsSheet } from "./ui";
 import { PromptCover } from "./PromptCover";
-import ImagePreview from "./ImagePreview";
+import { SafeImg } from "./states";
 import { previewOf } from "@/lib/access";
+// معاينة الصور ثقيلة (سحب/تكبير) — تُحمَّل فقط عند فتحها
+const ImagePreview = dynamic(() => import("./ImagePreview"), { ssr: false });
 import type { PromptRow } from "@/types";
 
 const REASONS = ["محتوى مسيء", "احتيال أو spam", "انتهاك حقوق", "أخرى"];
@@ -40,7 +43,7 @@ async function getFollowed(): Promise<Set<string>> {
 }
 const invalidateFollowed = () => { followedSet = null; followedPromise = null; };
 
-export default function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
+function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const cats = useCategories();
   const [liked, setLiked] = useState(!!p.liked);
   const [saved, setSaved] = useState(!!p.saved);
@@ -197,7 +200,7 @@ export default function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
           data-i={initial}
           aria-label={`الملف الشخصي: ${name}`}
         >
-          {p.author?.avatar_url && <img src={p.author.avatar_url} alt="" loading="lazy" />}
+          {p.author?.avatar_url && <img src={p.author.avatar_url} alt="" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
@@ -233,7 +236,7 @@ export default function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
                 style={{ aspectRatio: ratio }}
                 aria-label={`عرض الصورة ${i + 1} من ${p.images.length}`}
               >
-                <img src={im.url} alt={`مرفق للبرومبت: ${name}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                <SafeImg {...imgSet(im.url)} sizes="(max-width: 768px) 100vw, 640px" alt={`مرفق للبرومبت: ${name}`} className="h-full w-full object-cover" />
                 {im.url.endsWith(".gif") && <span className="chip absolute start-3 top-3 bg-charcoal/75 text-snow">GIF</span>}
               </button>
             ))}
@@ -368,3 +371,6 @@ export default function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
     </motion.article>
   );
 }
+
+// memo: يمنع إعادة الرسم عند تحديث الفيد إلا إذا تغيّر الكائن نفسه
+export default memo(PromptCard);

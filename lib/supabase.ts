@@ -11,7 +11,9 @@ export const sb = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || (ssr ? "https://placeholder.supabase.co" : ""),
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (ssr ? "placeholder" : "")
 );
-export const toast = (m: string) => window.dispatchEvent(new CustomEvent("khiyal:toast", { detail: m }));
+export type Tone = "info" | "success" | "error";
+export const toast = (m: string, tone: Tone = "info") =>
+  typeof window !== "undefined" && window.dispatchEvent(new CustomEvent("khiyal:toast", { detail: { msg: m, tone } }));
 export const uid = async () => (await sb.auth.getSession()).data.session?.user.id;
 export const ago = (d: string) => {
   const s = (new Date(d).getTime() - Date.now()) / 1000, f = new Intl.RelativeTimeFormat("ar", { numeric: "auto" });
@@ -68,6 +70,19 @@ export function useCategories(): Record<number, string> {
 
 const SIZES = [400, 800, 1600] as const;
 export const thumb = (url: string, s: 400 | 800 | 1600) => (url.endsWith("/1600.webp") ? url.replace("/1600.webp", `/${s}.webp`) : url);
+/**
+ * مصدر متجاوب للصور المرفوعة بصيغة WebP متعدّدة الأحجام (400/800/1600).
+ * يعيد `src` بحجم افتراضي مناسب + `srcSet` + `sizes` — للصور الثابتة الرابط فقط،
+ * وإلا يعيد الرابط كما هو (GIF مثلاً). يقلّل البيانات على الشاشات الصغيرة بشكل كبير.
+ */
+export const imgSet = (url: string, fallback: 400 | 800 | 1600 = 800) => {
+  if (!url.endsWith("/1600.webp")) return { src: url };
+  const base = url.slice(0, -"/1600.webp".length);
+  return {
+    src: `${base}/${fallback}.webp`,
+    srcSet: `${base}/400.webp 400w, ${base}/800.webp 800w, ${base}/1600.webp 1600w`,
+  };
+};
 
 export async function dims(f: Blob) {
   const b = await createImageBitmap(f); const r = { w: b.width, h: b.height }; b.close(); return r;

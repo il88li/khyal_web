@@ -1,8 +1,8 @@
 "use client";
 // components/chrome.tsx — تخطيط خيال Luminous Minimalism، RTL ومتجاوب
-import { MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
-  BarChart3, Bell, BookMarked, Compass, Home, MoreHorizontal,
+  BarChart3, Bell, BookMarked, Compass, Home, Info, MoreHorizontal,
   LogIn, LogOut, Plus, Settings, ShieldCheck, Sparkles, UserRound, Users,
 } from "@/components/icons";
 import type { LucideIcon } from "@/components/icons";
@@ -294,6 +294,36 @@ export function Shell({ children }: { children: React.ReactNode }) {
   </>;
 }
 
+/* ── شريط عدم الاتصال: يظهر أسفل الشاشة عند انقطاع الشبكة ── */
+export function OfflineBar() {
+  const [off, setOff] = useState(false);
+  useEffect(() => {
+    const sync = () => setOff(!navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => { window.removeEventListener("online", sync); window.removeEventListener("offline", sync); };
+  }, []);
+  return (
+    <AnimatePresence>
+      {off && (
+        <motion.div
+          role="status"
+          aria-live="polite"
+          initial={{ y: 56, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 56, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          className="offline-bar"
+        >
+          <Info size={16} />
+          <span>لا يوجد اتصال بالإنترنت — سيُستأنف التحميل تلقائياً عند عودته</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ── Providers: إعدادات + تهيئة قاعدة البيانات ── */
 const MISSING = /schema cache|Could not find the (table|function)|relation .* does not exist/i;
 type Phase = "idle" | "working" | "done" | "nourl" | "failed";
@@ -354,6 +384,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion={r}>
       <AuthProvider>{children}</AuthProvider>
+      <OfflineBar />
       {show && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-fog px-5" role="alert">
           <div className="flex w-full max-w-sm flex-col gap-4 card p-4 shadow-soft">
