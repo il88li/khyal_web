@@ -3,7 +3,7 @@
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
   BarChart3, Bell, BookMarked, Compass, Home, Info, MoreHorizontal,
-  LogIn, LogOut, Plus, Settings, ShieldCheck, Sparkles, UserRound, Users,
+  BadgeCheck, LogIn, LogOut, Plus, Settings, ShieldCheck, Sparkles, UserRound, Users,
 } from "@/components/icons";
 import type { LucideIcon } from "@/components/icons";
 import Link from "next/link";
@@ -13,11 +13,29 @@ import { AuthProvider, useAuth } from "./auth";
 import { Skeleton } from "./states";
 import { AdSlot } from "./AdSlot";
 import { BottomSheet } from "./ui";
-import { VaporType } from "./ui/vapor-type";
+import { FuzzyText } from "./ui/fuzzy-text";
 import { isBare, refreshWebToken, registerToken, sb, uid } from "@/lib/supabase";
 
 export const haptic = (ms = 8) => { try { navigator.vibrate?.(ms); } catch {} };
-const LOGO = "/icons/khiyal-mark-192-v5.png";
+
+/** هوية «khyal studio» بتأثير النص الضبابي (FuzzyText) — يقرأ لون النص من السمة تلقائياً */
+function FuzzyBrand({ size = 20 }: { size?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [color, setColor] = useState("#12141c");
+  useEffect(() => {
+    const read = () => { if (ref.current) setColor(getComputedStyle(ref.current).color || "#12141c"); };
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+  return (
+    <span ref={ref} className="inline-flex text-charcoal" style={{ lineHeight: 1 }}>
+      <FuzzyText text="khyal studio" fontSize={size} fontWeight={800} color={color}
+        enableHover={false} baseIntensity={0.12} hoverIntensity={0.5} fuzzRange={12} glitchMode glitchInterval={4200} glitchDuration={180} />
+    </span>
+  );
+}
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 const TOP_LINKS: NavItem[] = [
@@ -29,6 +47,7 @@ const TOP_LINKS: NavItem[] = [
 ];
 const EXTRA_LINKS: NavItem[] = [
   { href: "/stats", label: "إحصاءاتي", icon: BarChart3 },
+  { href: "/verification", label: "توثيق الحساب", icon: BadgeCheck },
   { href: "/requests", label: "طلبات المتابعة", icon: Users },
   { href: "/safety", label: "الأمان والثقة", icon: ShieldCheck },
   { href: "/settings", label: "الإعدادات", icon: Settings },
@@ -42,7 +61,7 @@ const TITLES: [string, string][] = [
   ["/enhance", "تحسين البرومبت"], ["/community", "المجتمع"],
   ["/safety", "الأمان والثقة"], ["/new", "برومبت جديد"], ["/notifications", "الإشعارات"],
   ["/requests", "طلبات المتابعة"], ["/settings", "الإعدادات"], ["/search", "استكشف"],
-  ["/library", "مكتبتي"], ["/stats", "إحصاءاتي"], ["/profile/me", "ملفي"],
+  ["/library", "مكتبتي"], ["/stats", "إحصاءاتي"], ["/verification", "توثيق الحساب"], ["/profile/me", "ملفي"],
   ["/profile/", "الملف الشخصي"], ["/p/", "البرومبت"],
 ];
 const PAGE_HEADINGS: [string, string, string][] = [
@@ -56,6 +75,7 @@ const PAGE_HEADINGS: [string, string, string][] = [
   ["/requests", "طلبات المتابعة", "أدر طلبات الانضمام إلى دائرتك."],
   ["/settings", "الإعدادات", "اجعل خيال أقرب إلى طريقتك في العمل."],
   ["/stats", "إحصاءاتي", "تابع ما تنشره وما يلقى صدى."],
+  ["/verification", "توثيق الحساب", "احصل على شارة التوثيق لتزيد ثقة جمهورك."],
   ["/profile/", "الملف الشخصي", "منشوراتك ونشاطك في خيال."],
   ["/p/", "البرومبت", "اقرأه، جرّبه، أو احفظه للعودة إليه."],
   ["/safety", "الأمان والثقة", "أدوات الحماية وإرشادات المجتمع."],
@@ -95,8 +115,7 @@ export function Sidebar({ path: givenPath }: { path?: string }) {
   return (
     <aside className="app-sidebar" aria-label="القائمة الرئيسية">
       <Link href="/" className="sidebar-brand" aria-label="خيال — الرئيسية">
-        <span className="brand-mark"><img src={LOGO} alt="" /></span>
-        <span className="brand-word"><strong>خيال</strong><small>مساحة لصنّاع الأفكار</small></span>
+        <FuzzyBrand size={18} />
       </Link>
 
       <Link href="/new" className="sidebar-create btn btn-primary">
@@ -144,9 +163,6 @@ export function Sidebar({ path: givenPath }: { path?: string }) {
 }
 
 /** رأس مختصر لعرض الهاتف؛ البحث والجرس والقائمة في متناول الإبهام. */
-// كلمات الخيال التي تتكثّف وتتبخّر في رأس التطبيق — تعبير واحد في كل مرة.
-const VAPOR_WORDS = ["خيال", "حوّل الفكرة إلى صورة", "اكتب ما تتخيّله", "اصنع برومبتاً يشبه حلمك", "أطلق خيالك"];
-
 export function TopBar() {
   const path = usePathname();
   const router = useRouter();
@@ -184,8 +200,8 @@ export function TopBar() {
   return (
     <header className="app-topbar">
       <div className="app-topbar-inner">
-        <Link href="/" aria-label="خيال — الرئيسية" className="min-w-0 flex-1 text-lg font-bold text-charcoal">
-          <VaporType words={VAPOR_WORDS} />
+        <Link href="/" aria-label="خيال — الرئيسية" className="min-w-0 flex-1">
+          <FuzzyBrand size={20} />
         </Link>
         <button onClick={() => { haptic(8); setMore(true); }} aria-label="المزيد" aria-haspopup="dialog" title="المزيد" className="icon-btn app-more shrink-0">
           <MoreHorizontal size={24} />
@@ -258,7 +274,7 @@ export function BottomNav() {
 }
 
 /** غلاف موحّد: SideBar على الويب، عمود تنقل مختصر على الهاتف، وتحدّي عند اتساع الشاشة. */
-const PROTECTED = ["/new", "/library", "/settings", "/notifications", "/stats", "/requests", "/profile/me"];
+const PROTECTED = ["/new", "/library", "/settings", "/notifications", "/stats", "/requests", "/verification", "/profile/me"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();

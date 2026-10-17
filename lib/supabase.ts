@@ -190,5 +190,20 @@ export async function withMeta<T extends { id: string }>(rows: T[]): Promise<T[]
     const x = await sb.from("prompts").select("id,title,tags").in("id", rows.map((r) => r.id));
     if (!x.error) { const M = new Map((x.data ?? []).map((r: any) => [r.id, r])); rows.forEach((r) => Object.assign(r, M.get(r.id) ?? {})); }
   } catch {}
+  await withVerified(rows);
+  return rows;
+}
+
+/** يدمج شارة التوثيق على كائن الكاتب (اختياري: يتجاهل غياب العمود قبل تنفيذ التهيئة) */
+export async function withVerified<T extends { id: string }>(rows: T[]): Promise<T[]> {
+  const ids = Array.from(new Set(rows.map((r: any) => r.author?.id).filter(Boolean))) as string[];
+  if (!ids.length) return rows;
+  try {
+    const v = await sb.from("profiles").select("id,verified").in("id", ids);
+    if (!v.error && v.data) {
+      const V = new Map((v.data as any[]).map((p) => [p.id, p.verified]));
+      rows.forEach((r: any) => { if (r.author && V.has(r.author.id)) r.author.verified = V.get(r.author.id); });
+    }
+  } catch {}
   return rows;
 }

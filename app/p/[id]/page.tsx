@@ -7,11 +7,12 @@ import type { Metadata } from "next";
 import { Comments, Gallery } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { GatedPrompt } from "@/components/GatedPrompt";
+import { BadgeCheck } from "@/components/icons";
 
 type PublicPrompt = {
   id: string; body: string; enhanced: string | null; images: { url: string; w: number; h: number }[];
   title?: string | null; tags?: string[] | null; category_id?: number | null; locked?: boolean; hidden?: number;
-  author?: { id: string; display_name: string | null; username: string | null } | null;
+  author?: { id: string; display_name: string | null; username: string | null; verified?: boolean } | null;
 };
 
 function client() {
@@ -50,6 +51,7 @@ export default async function Page({ params }: { params: { id: string } }) {
           <Link href={`/profile/${p.author?.id}`} className="avatar h-10 w-10 shrink-0 bg-brand-tint text-brand-ink" data-i={initial} aria-label={`الملف الشخصي: ${name}`} />
           <div className="min-w-0 flex-1">
             <Link href={`/profile/${p.author?.id}`} className="block truncate text-sm font-semibold text-charcoal">{name}</Link>
+            {p.author?.verified && <span title="حساب موثّق" aria-label="حساب موثّق" className="inline-flex align-middle text-info-ink"><BadgeCheck size={15} fill="currentColor" fillOpacity={0.16} /></span>}
             {p.author?.username && <span dir="ltr" className="truncate text-caption text-smoke">@{p.author.username}</span>}
           </div>
         </header>

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "@/components/icons";
 import PromptCard from "@/components/PromptCard";
 import { sb, uid, explain, withMeta } from "@/lib/supabase";
+import { rankForYou } from "@/lib/algorithm";
 import Link from "next/link";
 import type { PromptRow } from "@/types";
 
@@ -94,7 +95,9 @@ async function fetchPage(tab: Tab, cat: number | null, page: number): Promise<Pa
     }
   }
   await gateRows(list);
-  return { rows: list, note };
+  // خوارزمية التوزيع: ترتيب «مختار لك» و«رائج» حسب السرعة/الجِدة/الجودة/الاهتمام بدل الزمن الخام
+  const rank = tab === "foryou" ? rankForYou(list, p?.ids ?? []) : tab === "trending" ? rankForYou(list) : list;
+  return { rows: rank, note };
 }
 
 /** يفرض حدود رؤية البرومبت من جهة الخادم (RPC) ويجلب العنوان/الوسوم — مع احتياطٍ إن لم تُنفَّذ الهجرة */
@@ -105,7 +108,7 @@ async function gateRows(list: PromptRow[]) {
     const arr = (data ?? []) as any[];
     if (!error && arr.length) {
       const M = new Map(arr.map((r) => [r.id, r]));
-      list.forEach((r) => { const g = M.get(r.id); if (g) Object.assign(r, { body: g.body, enhanced: g.enhanced, locked: g.locked, hidden: g.hidden, title: g.title ?? r.title, tags: g.tags ?? r.tags }); });
+      list.forEach((r) => { const g = M.get(r.id); if (g) Object.assign(r, { body: g.body, enhanced: g.enhanced, locked: g.locked, hidden: g.hidden, title: g.title ?? r.title, tags: g.tags ?? r.tags, author: g.author ? { ...r.author, verified: g.author.verified ?? r.author?.verified } : r.author }); });
       return;
     }
   } catch {}
@@ -269,9 +272,7 @@ export default function Feed() {
 
   return (
     <main className="feed-main flex flex-col gap-4">
-      <header
-        className="feed-sticky-header sticky z-30 -mx-3 flex flex-col border-b border-silver bg-fog px-3 pb-2 pt-2 md:mx-0 md:px-0"
-      >
+      <header className="feed-tabs-header flex flex-col pb-1 pt-1">
         <nav className="seg feed-tabs" aria-label="تصفية الفيد">
           {TABS.map(([k, l]) => (
             <button key={k} data-on={tab === k ? "1" : undefined} onClick={() => setTab(k)} className="relative">

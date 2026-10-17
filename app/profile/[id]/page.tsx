@@ -11,7 +11,7 @@ import { VERSION, ago, explain, purgeImageFolder, sb, thumb, toast, uid, uploadI
 import { BottomSheet } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
-import { BADGES, BadgeStrip, badgeStats, levelOf, nextStep, type BStats } from "@/components/badges";
+import { BADGES, BadgeStrip, VerifiedBadge, badgeStats, levelOf, nextStep, type BStats } from "@/components/badges";
 
 type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null };
 type Cell = { id: string; body: string; enhanced: string | null; images: { url: string }[]; like_count?: number };
@@ -21,7 +21,7 @@ export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const [me, setMe] = useState<string | undefined>(), [p, setP] = useState<Prof | null>(null), [cells, setCells] = useState<Cell[]>([]), [saved, setSaved] = useState<Cell[]>([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
-  const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null);
+  const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null), [verified, setVerified] = useState(false);
   async function change(kind: "cover_url" | "avatar_url", f?: File) {
     if (!f || !me) return; setUp(kind);
     try {
@@ -58,6 +58,11 @@ export default function Profile() {
 
   useEffect(() => { uid().then(setMe); }, []);
   useEffect(() => { if (pid) badgeStats(pid).then(setBadges); }, [pid]);
+  useEffect(() => { // شارة التوثيق (اختيارية: تُتجاهل قبل تنفيذ التهيئة)
+    setVerified(false);
+    if (!pid) return;
+    sb.from("profiles").select("verified").eq("id", pid).maybeSingle().then(({ data }) => { if (data) setVerified(!!(data as any).verified); });
+  }, [pid]);
   useEffect(() => {
     if (!pid) return;
     const count = (t: string, col: string) => { const q = sb.from(t).select("*", { count: "exact", head: true }).eq(col, pid); return t === "follows" ? q.eq("status", "accepted") : q; };
@@ -199,7 +204,7 @@ export default function Profile() {
 
       {/*3 — الهوية موسّطة: اسم + @username + شارات */}
       <div className="flex flex-col items-center gap-1 px-2 pt-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-charcoal">{p?.display_name ?? <span className="inline-block h-6 w-28 animate-pulse rounded-full bg-mist" />}</h1>
+        <h1 className="flex items-center justify-center gap-1.5 text-2xl font-bold tracking-tight text-charcoal">{p?.display_name ?? <span className="inline-block h-6 w-28 animate-pulse rounded-full bg-mist" />}{verified && <VerifiedBadge size={20} />}</h1>
         <p className="text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>
         <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
           {badges && <span className="chip chip-gold">المستوى {levelOf(badges)}</span>}

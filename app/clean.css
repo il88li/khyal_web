@@ -129,15 +129,24 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
 .glass-h-text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
   -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent); }
 
+/* بطاقة نص البرومبت: ارتفاع ثابت مع تمرير داخلي — في الفيد ومعاينة الصورة */
+.prompt-text-card { cursor: pointer; }
+.glass-h-fallback { position: absolute; inset: 0; z-index: -2; background: linear-gradient(135deg, rgb(var(--brand)), rgb(var(--brand-lo))); }
+.prompt-text-scroll { max-height: 148px; overflow-y: auto; overscroll-behavior: contain; padding-inline-end: 4px; }
+.prompt-text-scroll--sm { max-height: 92px; }
+.glass-h-body--sm { gap: 6px; padding: 12px 14px; }
+.prompt-lock-note--glass { background: rgb(255 255 255 / .18) !important; color: #fff !important; }
+
 /* الشعار الجديد: بلا إطار أو خلفية */
 .brand-mark { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .brand-mark img { object-fit: contain; }
 
-/* ── الهيدر: شريط ثابت بعرض الشاشة يلتصق بالأعلى — لا قرص عائم ── */
-.app-topbar { position: fixed !important; top: 0 !important; inset-inline: 0 !important; width: 100% !important; max-width: none !important; margin-inline: 0 !important;
-  height: auto !important; padding: 0 !important; border-radius: 0 !important; z-index: 50 !important;
-  background: rgb(var(--c-fog)) !important; border-bottom: 1px solid rgb(var(--c-line) / .55) !important; box-shadow: none !important; }
-.app-topbar-inner { display: flex !important; width: min(100%, 760px) !important; height: auto !important; min-height: 54px; align-items: center; justify-content: space-between; gap: 6px; margin-inline: auto !important; padding-inline: 14px 4px !important; }
+/* ── الهيدر: قرص عائم بنفس حجم شريط التنقل السفلي ── */
+.app-topbar { position: fixed !important; top: calc(10px + env(safe-area-inset-top)) !important; inset-inline: 10px !important;
+  width: min(calc(100% - 20px), 560px) !important; max-width: none !important; margin-inline: auto !important;
+  height: 64px !important; padding: 0 !important; border: 0 !important; border-bottom: 0 !important; border-radius: 26px !important; z-index: 50 !important;
+  background: rgb(var(--c-snow)) !important; box-shadow: var(--float) !important; overflow: visible !important; }
+.app-topbar-inner { display: flex !important; width: 100% !important; height: 64px !important; min-height: 64px !important; align-items: center; justify-content: space-between; gap: 6px; margin-inline: 0 !important; padding-inline: 16px !important; }
 
 /* ── التنقل السفلي: شريط عائم بحواف دائرية بدل الالتصاق بالحافة ── */
 .mobile-bottomnav { position: fixed !important; inset-inline: 10px !important; bottom: calc(10px + env(safe-area-inset-bottom)) !important;
@@ -147,11 +156,10 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
 .mobile-bottomnav ul { padding: 0 8px; }
 .mobile-bottomnav li { display: flex; align-items: center; justify-content: center; }
 
-/* ── المسافات: المحتوى يبدأ أسفل الهيدر الثابت، والشريط العائم لا يغطي آخر الصفحة ── */
+/* ── المسافات: المحتوى يبدأ أسفل الهيدر العائم، والشريط العائم لا يغطي آخر الصفحة ── */
 @media (max-width: 1023px) {
-  :root { --top: calc(54px + env(safe-area-inset-top)); --bottom: 96px; }
-  .workspace-shell { padding-top: calc(54px + env(safe-area-inset-top)); }
-  .feed-sticky-header { top: calc(54px + env(safe-area-inset-top)) !important; }
+  :root { --top: calc(84px + env(safe-area-inset-top)); --bottom: 96px; }
+  .workspace-shell { padding-top: calc(84px + env(safe-area-inset-top)); }
 }
 
 /* ==================================================================

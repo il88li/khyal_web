@@ -51,6 +51,34 @@ export async function reportOp(c: string, id: string, op: string) {
   else if (op === "dismiss") await s.from("reports").update({ resolved: true }).eq("id", id); else throw new Error("bad_op");
   await audit(a, `report.${op}`, id); return true;
 }
+/** التوثيق: قائمة الطلبات (المعلّقة أولاً) مع بيانات المتقدّم وإحصاءاته */
+export async function verifications(c: string) {
+  await requireAdmin(c);
+  const s = svc();
+  const { data } = await s.from("verification_requests").select("id,user_id,kind,note,status,review_note,created_at,user:profiles!user_id(id,username,display_name,avatar_url,verified)").order("created_at", { ascending: false }).limit(100);
+  const rows = (data ?? []) as any[];
+  const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+  const stats: Record<string, { prompts: number; likes: number; followers: number }> = {};
+  await Promise.all(ids.map(async (uid) => {
+    const [pr, fl] = await Promise.all([
+      s.from("prompts").select("like_count").eq("author_id", uid).limit(1000),
+      s.from("follows").select("*", { count: "exact", head: true }).eq("following_id", uid).eq("status", "accepted"),
+    ]);
+    const p = (pr.data ?? []) as any[];
+    stats[uid] = { prompts: p.length, likes: p.reduce((a, r) => a + (r.like_count ?? 0), 0), followers: fl.count ?? 0 };
+  }));
+  return rows.map((r) => ({ ...r, stats: stats[r.user_id] ?? { prompts: 0, likes: 0, followers: 0 } }));
+}
+/** التوثيق: قبول/رفض طلب + تحديث شارة الحساب + إشعار المستخدم */
+export async function verifyUser(c: string, userId: string, approve: boolean, note?: string) {
+  const a = await requireAdmin(c), s = svc();
+  const { data: req } = await s.from("verification_requests").select("id").eq("user_id", userId).eq("status", "pending").order("created_at", { ascending: false }).maybeSingle();
+  if (req) await s.from("verification_requests").update({ status: approve ? "approved" : "rejected", review_note: (note ?? "").slice(0, 500), reviewed_at: new Date().toISOString() }).eq("id", req.id);
+  await s.from("profiles").update(approve ? { verified: true, verified_at: new Date().toISOString() } : { verified: false, verified_at: null }).eq("id", userId);
+  await s.from("notifications").insert({ user_id: userId, title: approve ? "تم توثيق حسابك" : "نتيجة طلب التوثيق", body: approve ? "أصبح حسابك موثّقاً — تظهر الشارة بجانب اسمك." : ((note ?? "").trim() || "لم يُقبل طلب التوثيق حالياً."), link: approve ? `/profile/${userId}` : "/verification" });
+  await audit(a, approve ? "verify.approve" : "verify.reject", userId, { note });
+  return true;
+}
 export async function cats(c: string) { await requireAdmin(c); return (await svc().from("categories").select("*").order("sort")).data ?? []; }
 export async function catSave(c: string, r: { id?: number; slug: string; name_ar: string; sort: number; active: boolean }) {
   const a = await requireAdmin(c); const { error } = await svc().from("categories").upsert(r); if (error) throw error; await audit(a, "category.save", String(r.id ?? r.slug)); return true;

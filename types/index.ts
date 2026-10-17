@@ -1,6 +1,11 @@
 // types/index.ts — أنواع مشتركة
 export type Img = { url: string; w: number; h: number };
-export type Author = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
+export type Author = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; verified?: boolean };
+export type VerificationStats = {
+  ok: boolean; reason?: string; verified: boolean; status: string | null;
+  prompts: number; min_prompts: number; likes: number; min_likes: number;
+  followers: number; min_followers: number; days: number; min_days: number; eligible: boolean;
+};
 export type PromptRow = {
   id: string; body: string; enhanced: string | null; model: string | null; images: Img[];
   like_count: number; comment_count: number; created_at: string; category_id: number | null;

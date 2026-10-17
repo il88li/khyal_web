@@ -411,7 +411,7 @@ begin
     return json_build_object('id', r.id, 'body', r.body, 'enhanced', r.enhanced, 'locked', false, 'hidden', 0,
       'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
       'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
   end if;
   ratio := case t when 'free' then coalesce((select (value->>'free')::numeric from settings where key = 'visibility'), 0.8)
                   else coalesce((select (value->>'guest')::numeric from settings where key = 'visibility'), 0.5) end;
@@ -424,11 +424,62 @@ begin
   return json_build_object('id', r.id, 'body', body_g, 'enhanced', enh_g, 'locked', locked, 'hidden', hid,
     'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
     'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
 end $$; exception when others then perform setup_fail('create or replace function prompt_gated(p_id uuid)', sqlerrm); end $s$;
 do $s$ begin grant execute on function prompt_gated(uuid) to anon, authenticated; exception when others then perform setup_fail('grant execute on function prompt_gated(uuid) to an', sqlerrm); end $s$;
 do $s$ begin create or replace function prompts_gated(p_ids uuid[]) returns setof json language sql stable security definer set search_path = public as
 $$ select prompt_gated(x) from unnest(p_ids) as x $$; exception when others then perform setup_fail('create or replace function prompts_gated(p_ids uui', sqlerrm); end $s$;
 do $s$ begin grant execute on function prompts_gated(uuid[]) to anon, authenticated; exception when others then perform setup_fail('grant execute on function prompts_gated(uuid[]) to', sqlerrm); end $s$;
+do $s$ begin alter table profiles add column if not exists verified boolean not null default false; exception when others then perform setup_fail('alter table profiles add column if not exists veri', sqlerrm); end $s$;
+do $s$ begin alter table profiles add column if not exists verified_at timestamptz; exception when others then perform setup_fail('alter table profiles add column if not exists veri', sqlerrm); end $s$;
+do $s$ begin create table if not exists verification_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles on delete cascade,
+  kind text not null default 'creator',
+  note text,
+  status text not null default 'pending',
+  reviewed_by uuid references profiles on delete set null,
+  review_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+); exception when others then perform setup_fail('create table if not exists verification_requests (', sqlerrm); end $s$;
+do $s$ begin create unique index if not exists verification_requests_pending_uq on verification_requests (user_id) where status = 'pending'; exception when others then perform setup_fail('create unique index if not exists verification_req', sqlerrm); end $s$;
+do $s$ begin create index if not exists verification_requests_status_idx on verification_requests (status, created_at desc); exception when others then perform setup_fail('create index if not exists verification_requests_s', sqlerrm); end $s$;
+do $s$ begin alter table verification_requests enable row level security; exception when others then perform setup_fail('alter table verification_requests enable row level', sqlerrm); end $s$;
+do $s$ begin drop policy if exists "read own verification" on verification_requests; exception when others then perform setup_fail('drop policy if exists "read own verification" on v', sqlerrm); end $s$;
+do $s$ begin create policy "read own verification" on verification_requests for select using (auth.uid() = user_id); exception when others then perform setup_fail('create policy "read own verification" on verificat', sqlerrm); end $s$;
+do $s$ begin drop policy if exists "insert own verification" on verification_requests; exception when others then perform setup_fail('drop policy if exists "insert own verification" on', sqlerrm); end $s$;
+do $s$ begin create policy "insert own verification" on verification_requests for insert with check (auth.uid() = user_id and not_banned()); exception when others then perform setup_fail('create policy "insert own verification" on verific', sqlerrm); end $s$;
+do $s$ begin create or replace function verification_stats(p_user uuid default null) returns json language plpgsql stable security definer set search_path = public as $$
+declare u uuid := coalesce(p_user, auth.uid()); v boolean; pn int; ln int; fn int; d int; req text;
+begin
+  if u is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
+  select coalesce(verified, false) into v from profiles where id = u;
+  select count(*) into pn from prompts where author_id = u;
+  select coalesce(sum(like_count), 0) into ln from prompts where author_id = u;
+  select count(*) into fn from follows where following_id = u and status = 'accepted';
+  select floor(extract(epoch from (now() - created_at)) / 86400)::int into d from profiles where id = u;
+  select status into req from verification_requests where user_id = u order by created_at desc limit 1;
+  return json_build_object('ok', true, 'verified', coalesce(v, false), 'status', req,
+    'prompts', pn, 'min_prompts', 10,
+    'likes', ln, 'min_likes', 100,
+    'followers', fn, 'min_followers', 50,
+    'days', coalesce(d, 0), 'min_days', 30,
+    'eligible', (not coalesce(v, false)) and pn >= 10 and ln >= 100 and fn >= 50 and coalesce(d, 0) >= 30);
+end $$; exception when others then perform setup_fail('create or replace function verification_stats(p_us', sqlerrm); end $s$;
+do $s$ begin grant execute on function verification_stats(uuid) to authenticated; exception when others then perform setup_fail('grant execute on function verification_stats(uuid)', sqlerrm); end $s$;
+do $s$ begin create or replace function request_verification(p_note text default null) returns json language plpgsql security definer set search_path = public as $$
+declare s json;
+begin
+  if auth.uid() is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
+  s := verification_stats(auth.uid());
+  if (s ->> 'verified')::boolean then return json_build_object('ok', false, 'reason', 'already'); end if;
+  if not (s ->> 'eligible')::boolean then return json_build_object('ok', false, 'reason', 'not_eligible'); end if;
+  if exists (select 1 from verification_requests where user_id = auth.uid() and status = 'pending') then
+    return json_build_object('ok', false, 'reason', 'pending'); end if;
+  insert into verification_requests (user_id, note) values (auth.uid(), left(coalesce(p_note, ''), 500));
+  return json_build_object('ok', true);
+end $$; exception when others then perform setup_fail('create or replace function request_verification(p_', sqlerrm); end $s$;
+do $s$ begin grant execute on function request_verification(text) to authenticated; exception when others then perform setup_fail('grant execute on function request_verification(tex', sqlerrm); end $s$;
 do $s$ begin notify pgrst, 'reload schema'; exception when others then perform setup_fail('notify pgrst, ''reload schema''', sqlerrm); end $s$;
 select 'تمت التهيئة — ' || coalesce((select string_agg(step || ' → ' || error, E'\n') from setup_log), 'بلا أخطاء') as result;

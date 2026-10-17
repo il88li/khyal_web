@@ -3,12 +3,13 @@
 import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Bookmark, Braces, Copy, GitFork, Heart, MessageCircle,
-  Share2, Sparkles, UserPlus, Check, ChevronDown } from "@/components/icons";
+  Share2, Sparkles, UserPlus, Check } from "@/components/icons";
 import { ago, burst, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
 import { BottomSheet, Comments, VarsSheet } from "./ui";
+import { VerifiedBadge } from "./badges";
 import { PromptCover } from "./PromptCover";
 import { SafeImg } from "./states";
 import { previewOf } from "@/lib/access";
@@ -60,7 +61,6 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const [rep, setRep] = useState(false);
   const [orig, setOrig] = useState(false);
   const [vsheet, setVsheet] = useState(false);
-  const [revealed, setRevealed] = useState(false);
   const override: string | null = null; // نصّ يدوي بعد التعديل — التعديل صار من الملف الشخصي
 
   const [following, setFollowing] = useState<boolean | null>(null);
@@ -213,6 +213,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
             <Link href={`/profile/${p.author?.id}`} className="truncate text-sm font-semibold text-charcoal">{name}</Link>
+            {p.author?.verified && <VerifiedBadge />}
             {p.author?.username && <span dir="ltr" className="truncate text-caption text-smoke">@{p.author.username}</span>}
           </div>
           <p className="text-caption text-smoke">{ago(p.created_at)}</p>
@@ -283,37 +284,33 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         </div>
       )}
 
+      {/* بطاقة البرومبت: بنفس نظام معاينة الصورة — ارتفاع ثابت وتمرير داخلي بدل الكشف المنسدل */}
       <div className="prompt-card-copy-wrap">
-        <div onClick={tapText} className="prompt-card-copy" role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tapText()} aria-label={revealEnabled ? "عرض البرومبت كاملًا" : "مقتطف من البرومبت"}>
-          {p.title && <p className="mb-1 text-base font-bold text-charcoal">{p.title}</p>}
-          <p className="line-clamp-2 whitespace-pre-wrap text-base leading-relaxed text-charcoal">{gate.shown}{gate.locked && "…"}</p>
-        </div>
-        {(shown.length > 80 || shown.includes("\n")) && revealEnabled && <>
-          {/* البرومبت مخفي افتراضياً — يُكشف داخل البطاقة نفسها بالسحب للأسفل (بلا نافذة منبثقة) */}
-          <AnimatePresence initial={false}>
-            {revealed && (
-              <motion.div key="revealed" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: [0.2, 0, 0, 1] }} className="overflow-hidden">
-                <div className="prompt-reveal">
-                  <p className="whitespace-pre-wrap text-base leading-relaxed text-charcoal">{shown}</p>
-                </div>
-              </motion.div>
+        <section
+          onClick={tapText}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tapText()}
+          aria-label={revealEnabled ? "نص البرومبت" : "مقتطف من البرومبت"}
+          className="glass-h prompt-text-card"
+        >
+          {first
+            ? <img src={first.url} alt="" aria-hidden="true" className="glass-h-bg" />
+            : <span aria-hidden className="glass-h-fallback" />}
+          <div className="glass-h-body">
+            {p.title && <p className="text-base font-bold text-white">{p.title}</p>}
+            <div className="prompt-scroll prompt-text-scroll">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">
+                {revealEnabled ? shown : gate.shown}{!revealEnabled && gate.locked && "…"}
+              </p>
+            </div>
+            {!revealEnabled && (
+              <Link href="/pricing" onClick={(e) => e.stopPropagation()} className="prompt-lock-note prompt-lock-note--glass">
+                باقي البرومبت لمشتركي خيال — اعرف المزيد
+              </Link>
             )}
-          </AnimatePresence>
-          <motion.button
-            onClick={() => setRevealed((o) => !o)}
-            drag="y" dragSnapToOrigin dragDirectionLock dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.02, bottom: 0.6 }}
-            onDragEnd={(_, info) => { if (info.offset.y > 56 || info.velocity.y > 600) setRevealed(true); }}
-            aria-expanded={revealed}
-            aria-label={revealed ? "إخفاء البرومبت" : "عرض البرومبت كاملاً — اسحب البطاقة للأسفل"}
-            className="prompt-expand mx-auto mt-1 flex cursor-grab touch-none items-center gap-1 active:cursor-grabbing"
-          >
-            <motion.span animate={{ rotate: revealed ? 180 : 0 }} transition={{ type: "spring", stiffness: 400, damping: 26 }} className="flex"><ChevronDown size={18} /></motion.span>
-            {revealed ? "إخفاء البرومبت" : "عرض البرومبت كاملاً"}
-          </motion.button>
-        </>}
-        {!revealEnabled && (
-          <Link href="/pricing" className="prompt-lock-note">باقي البرومبت لمشتركي خيال — اعرف المزيد</Link>
-        )}
+          </div>
+        </section>
       </div>
 
       {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && (

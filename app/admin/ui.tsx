@@ -41,7 +41,7 @@ function Search({ onChange }: { onChange: (v: string) => void }) {
 
 export function Panel({ csrf }: { csrf: string }) {
   const r = useRouter(), [tab, setTab] = useState("overview"), [q, setQ] = useState("");
-  const T = [["overview", "نظرة عامة"], ["users", "المستخدمون"], ["prompts", "البرومبتات"], ["reports", "البلاغات"], ["health", "الفحص"], ["cats", "الفئات"], ["models", "النماذج"], ["ads", "الإعلانات"], ["system", "النظام"], ["logs", "السجلات"]];
+  const T = [["overview", "نظرة عامة"], ["users", "المستخدمون"], ["prompts", "البرومبتات"], ["reports", "البلاغات"], ["verify", "التوثيق"], ["health", "الفحص"], ["cats", "الفئات"], ["models", "النماذج"], ["ads", "الإعلانات"], ["system", "النظام"], ["logs", "السجلات"]];
   const act = async (fn: () => Promise<unknown>, done: () => void, ok = "تم") => { try { await fn(); toast(ok); done(); } catch { toast("تعذّر التنفيذ"); } };
 
   function Overview() {
@@ -166,7 +166,23 @@ export function Panel({ csrf }: { csrf: string }) {
         <div className="flex gap-2"><button className={btn} onClick={() => act(() => A.reportOp(csrf, r.id, "dismiss"), load)}>تجاهل</button>
           <button className={btn} onClick={() => confirm("حذف البرومبت المُبلَّغ عنه؟") && act(() => A.reportOp(csrf, r.id, "delete"), load)}>حذف البرومبت</button></div></div>))}</div>;
   }
-  const V: Record<string, () => JSX.Element | null> = { health: Health, reports: Reports, overview: Overview, users: Users, prompts: Prompts, cats: Cats, models: Models, system: System, ads: Ads, logs: Logs }, View = V[tab];
+  function Verify() {
+    const [d, load] = useData(() => A.verifications(csrf), []);
+    if (d && !d.length) return <p className="py-10 text-center text-graphite">لا طلبات توثيق بعد.</p>;
+    return <div className="flex flex-col gap-4">{d?.map((r: any) => (
+      <div key={r.id} className={`${card} flex flex-col gap-2`}>
+        <div className="flex items-center justify-between gap-2"><p className="text-sm font-medium">@{r.user?.username}{r.user?.verified ? " ✓ موثّق" : ""}</p>
+          <span className={`chip !h-7 px-2 text-caption ${r.status === "pending" ? "chip-gold" : r.status === "approved" ? "chip-info" : ""}`}>{r.status === "pending" ? "معلّق" : r.status === "approved" ? "مقبول" : "مرفوض"}</span></div>
+        {r.note && <p className="line-clamp-2 text-caption text-smoke">{r.note}</p>}
+        <p className="text-caption text-smoke tabular-nums">برومبتات {r.stats?.prompts ?? 0} · إعجابات {r.stats?.likes ?? 0} · متابعون {r.stats?.followers ?? 0}</p>
+        <div className="flex flex-wrap gap-2">
+          <button className={dark} onClick={() => act(() => A.verifyUser(csrf, r.user_id, true), load, "تم التوثيق")}>قبول وتوثيق</button>
+          <button className={btn} onClick={() => { const n = prompt("سبب الرفض (اختياري)") ?? ""; act(() => A.verifyUser(csrf, r.user_id, false, n), load, "تم الرفض"); }}>رفض</button>
+          {r.user?.verified && <button className={btn} onClick={() => confirm("سحب شارة التوثيق؟") && act(() => A.verifyUser(csrf, r.user_id, false, "سُحبت شارة التوثيق"), load, "سُحبت الشارة")}>سحب الشارة</button>}
+        </div>
+      </div>))}</div>;
+  }
+  const V: Record<string, () => JSX.Element | null> = { health: Health, reports: Reports, verify: Verify, overview: Overview, users: Users, prompts: Prompts, cats: Cats, models: Models, system: System, ads: Ads, logs: Logs }, View = V[tab];
   return (
     <main className="flex flex-col gap-4 pt-4 pb-10">
       <header className="flex h-14 items-center justify-between"><h1 className="text-2xl font-bold tracking-tight">الإدارة</h1><button className={btn} onClick={async () => { await A.logout(); r.replace("/profile/me"); }}>خروج</button></header>

@@ -423,7 +423,7 @@ begin
     return json_build_object('id', r.id, 'body', r.body, 'enhanced', r.enhanced, 'locked', false, 'hidden', 0,
       'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
       'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
   end if;
   ratio := case t when 'free' then coalesce((select (value->>'free')::numeric from settings where key = 'visibility'), 0.8)
                   else coalesce((select (value->>'guest')::numeric from settings where key = 'visibility'), 0.5) end;
@@ -436,7 +436,7 @@ begin
   return json_build_object('id', r.id, 'body', body_g, 'enhanced', enh_g, 'locked', locked, 'hidden', hid,
     'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
     'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
 end $$;
 grant execute on function prompt_gated(uuid) to anon, authenticated;
 
@@ -444,6 +444,63 @@ grant execute on function prompt_gated(uuid) to anon, authenticated;
 create or replace function prompts_gated(p_ids uuid[]) returns setof json language sql stable security definer set search_path = public as
 $$ select prompt_gated(x) from unnest(p_ids) as x $$;
 grant execute on function prompts_gated(uuid[]) to anon, authenticated;
+
+-- ===== 11) التوثيق: التحقق من الحسابات (شارة موثّق) =====
+alter table profiles add column if not exists verified boolean not null default false;
+alter table profiles add column if not exists verified_at timestamptz;
+
+create table if not exists verification_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles on delete cascade,
+  kind text not null default 'creator',
+  note text,
+  status text not null default 'pending',
+  reviewed_by uuid references profiles on delete set null,
+  review_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+create unique index if not exists verification_requests_pending_uq on verification_requests (user_id) where status = 'pending';
+create index if not exists verification_requests_status_idx on verification_requests (status, created_at desc);
+alter table verification_requests enable row level security;
+drop policy if exists "read own verification" on verification_requests;
+create policy "read own verification" on verification_requests for select using (auth.uid() = user_id);
+drop policy if exists "insert own verification" on verification_requests;
+create policy "insert own verification" on verification_requests for insert with check (auth.uid() = user_id and not_banned());
+
+-- قياس شروط التوثيق: 10 برومبتات منشورة، 100 إعجاب، 50 متابع، عمر الحساب 30 يوماً
+create or replace function verification_stats(p_user uuid default null) returns json language plpgsql stable security definer set search_path = public as $$
+declare u uuid := coalesce(p_user, auth.uid()); v boolean; pn int; ln int; fn int; d int; req text;
+begin
+  if u is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
+  select coalesce(verified, false) into v from profiles where id = u;
+  select count(*) into pn from prompts where author_id = u;
+  select coalesce(sum(like_count), 0) into ln from prompts where author_id = u;
+  select count(*) into fn from follows where following_id = u and status = 'accepted';
+  select floor(extract(epoch from (now() - created_at)) / 86400)::int into d from profiles where id = u;
+  select status into req from verification_requests where user_id = u order by created_at desc limit 1;
+  return json_build_object('ok', true, 'verified', coalesce(v, false), 'status', req,
+    'prompts', pn, 'min_prompts', 10,
+    'likes', ln, 'min_likes', 100,
+    'followers', fn, 'min_followers', 50,
+    'days', coalesce(d, 0), 'min_days', 30,
+    'eligible', (not coalesce(v, false)) and pn >= 10 and ln >= 100 and fn >= 50 and coalesce(d, 0) >= 30);
+end $$;
+grant execute on function verification_stats(uuid) to authenticated;
+
+create or replace function request_verification(p_note text default null) returns json language plpgsql security definer set search_path = public as $$
+declare s json;
+begin
+  if auth.uid() is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
+  s := verification_stats(auth.uid());
+  if (s ->> 'verified')::boolean then return json_build_object('ok', false, 'reason', 'already'); end if;
+  if not (s ->> 'eligible')::boolean then return json_build_object('ok', false, 'reason', 'not_eligible'); end if;
+  if exists (select 1 from verification_requests where user_id = auth.uid() and status = 'pending') then
+    return json_build_object('ok', false, 'reason', 'pending'); end if;
+  insert into verification_requests (user_id, note) values (auth.uid(), left(coalesce(p_note, ''), 500));
+  return json_build_object('ok', true);
+end $$;
+grant execute on function request_verification(text) to authenticated;
 
 notify pgrst, 'reload schema';
 

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Bookmark, ChevronDown, Copy, ExternalLink, Heart, Lock, MessageCircle, Share2, X } from "@/components/icons";
+import { Bookmark, Copy, ExternalLink, Heart, Lock, MessageCircle, Share2, X } from "@/components/icons";
 import { useAuth } from "./auth";
 import { Skeleton } from "./states";
 import { BottomSheet, Comments } from "./ui";
+import { VerifiedBadge } from "./badges";
 import { previewOf } from "@/lib/access";
 import { sb, toast, uid, withMeta } from "@/lib/supabase";
 import type { Img, PromptRow } from "@/types";
@@ -124,7 +125,7 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}>
       <div className="mx-auto flex w-full min-w-0 max-w-xl flex-col gap-4 px-4 pb-12" style={{ paddingTop: "max(16px, env(safe-area-inset-top))" }}>
         <header className="flex items-center justify-between gap-4">
-          <p className="min-w-0 flex-1 truncate text-base font-semibold text-charcoal">{name || "برومبت"}</p>
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-base font-semibold text-charcoal"><span className="truncate">{name || "برومبت"}</span>{p.author?.verified && <VerifiedBadge size={17} />}</p>
           <button onClick={onClose} aria-label="إغلاق" className="icon-btn shrink-0"><X size={24} /></button>
         </header>
 
@@ -144,33 +145,24 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
           </div>
         )}
 
-        {/* بطاقة البرومبت: أفقية زجاجية، جزء منه فقط */}
+        {/* بطاقة البرومبت: أفقية زجاجية مضغوطة، ارتفاع ثابت مع تمرير داخلي */}
         <section aria-label="معاينة البرومبت" className="glass-h">
           <img src={im.url} alt="" aria-hidden="true" className="glass-h-bg" />
-          <div className="glass-h-body">
+          <div className="glass-h-body glass-h-body--sm">
             {p.title && <p className="text-sm font-semibold text-white">{p.title}</p>}
-            <p className={`${open ? "" : "glass-h-text"} whitespace-pre-wrap text-sm leading-relaxed text-white/90`}>{open ? full : gate.shown}{!open && gate.locked && "…"}</p>
+            <div className="prompt-scroll prompt-text-scroll prompt-text-scroll--sm">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{open ? full : gate.shown}{!open && gate.locked && "…"}</p>
+            </div>
             {!!p.tags?.length && <div className="flex flex-wrap gap-1">{p.tags.map((t) => <span key={t} className="rounded-full bg-white/15 px-2 text-micro text-white">{t}</span>)}</div>}
             {gate.locked && !open && (
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1 text-caption text-white/80"><Lock size={16} />جزء من النص فقط</span>
                 <button onClick={() => setOpen(true)} className="btn btn-xs bg-white !text-black">عرض البرومبت كاملاً</button>
               </div>)}
+            {open && (
+              <button onClick={() => setOpen(false)} className="self-start text-caption font-medium text-white/80">إخفاء</button>)}
           </div>
         </section>
-
-        {/* إظهار/إخفاء البرومبت: اسحب البطاقة للأسفل — بلا نافذة منبثقة */}
-        <motion.button
-          onClick={() => setOpen((o) => !o)}
-          drag="y" dragSnapToOrigin dragDirectionLock dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.02, bottom: 0.6 }}
-          onDragEnd={(_, info) => { if (info.offset.y > 56 || info.velocity.y > 600) setOpen(true); }}
-          aria-expanded={open}
-          aria-label={open ? "إخفاء البرومبت" : "عرض البرومبت كاملاً — اسحب البطاقة للأسفل"}
-          className="mx-auto -mt-1 flex touch-none items-center gap-1 rounded-full bg-mist px-3 py-1.5 text-caption font-medium text-graphite transition-transform active:scale-95"
-        >
-          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ type: "spring", stiffness: 400, damping: 26 }} className="flex"><ChevronDown size={18} /></motion.span>
-          {open ? "إخفاء البرومبت" : "عرض البرومبت كاملاً"}
-        </motion.button>
 
         {/* الأيقونات الرئيسية */}
         <div className="flex w-full items-center justify-between">

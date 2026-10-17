@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { sb, explain, thumb, withMeta } from "@/lib/supabase";
 import { Lightbox, Skeleton } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
+import { VerifiedBadge } from "@/components/badges";
 import type { PromptRow } from "@/types";
 
 type Person = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; bio: string | null };
@@ -31,7 +32,7 @@ function Tile({ p, i, onOpen }: { p: PromptRow; i: number; onOpen: (p: PromptRow
       )}
       <Link href={`/p/${p.id}`} className="flex h-full flex-col gap-4 p-4">
         <p className="line-clamp-5 text-base leading-[1.8] text-charcoal">{text}</p>
-        {name && <span className="mt-auto truncate border-t border-silver pt-3 text-caption font-medium text-graphite">{name}</span>}
+        {name && <span className="mt-auto flex items-center gap-1 truncate border-t border-silver pt-3 text-caption font-medium text-graphite">{name}{p.author?.verified && <VerifiedBadge size={14} />}</span>}
       </Link>
     </motion.article>
   );

@@ -1,8 +1,18 @@
 "use client";
 // components/badges.tsx — محفظة الإنجازات: شارات تُحتسب من نشاط المستخدم مباشرة (بلا جداول جديدة)
 import Link from "next/link";
-import { Award, Copy, Flame, Heart, MessageCircle, Rocket, Star, Users, ChevronLeft } from "@/components/icons";
+import { Award, BadgeCheck, Copy, Flame, Heart, MessageCircle, Rocket, Star, Users, ChevronLeft } from "@/components/icons";
 import { sb, fmt } from "@/lib/supabase";
+
+/** شارة «موثّق» — تظهر بجانب اسم الحساب الموثّق (التحقق من المنشئين) */
+export function VerifiedBadge({ size = 15, label = false }: { size?: number; label?: boolean }) {
+  return (
+    <span title="حساب موثّق" aria-label="حساب موثّق" className="inline-flex shrink-0 items-center gap-0.5 align-middle text-info-ink">
+      <BadgeCheck size={size} fill="currentColor" fillOpacity={0.16} />
+      {label && <span className="text-caption font-semibold">موثّق</span>}
+    </span>
+  );
+}
 
 export type BStats = {
   prompts: number; likes: number; comments: number; copies: number; forks: number;

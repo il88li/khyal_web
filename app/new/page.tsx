@@ -1,9 +1,10 @@
 "use client";
 // app/new/page.tsx — نشر برومبت: صور أولاً، ثم النص؛ العنوان والتصنيف والوسوم تُولَّد تلقائياً عند النشر
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X } from "@/components/icons";
+import { Check, ChevronLeft, ChevronRight, ImagePlus, Sparkles, X } from "@/components/icons";
 import { dims, explain, sb, toast, uid, uploadImage } from "@/lib/supabase";
+import { publishReadiness } from "@/lib/algorithm";
 import PromptCard from "@/components/PromptCard";
 import type { Img, PromptRow } from "@/types";
 
@@ -18,6 +19,7 @@ export default function NewPrompt() {
   const [phase, setPhase] = useState<Phase>("idle"), [preview, setPreview] = useState(false);
   const [forkOf, setForkOf] = useState<string | null>(null), [forkCat, setForkCat] = useState<number | null>(null);
   const busy = phase !== "idle";
+  const ready = useMemo(() => publishReadiness({ text, images: items.length }), [text, items.length]);
 
   useEffect(() => { // تفريع: املأ النموذج بنص الأصل وانسبه عند النشر
     const f = new URLSearchParams(location.search).get("fork"); if (!f) return;
@@ -109,6 +111,23 @@ export default function NewPrompt() {
           <Sparkles size={24} className="shrink-0" />
           <p className="text-sm">العنوان والتصنيف والوسوم يُولَّدون تلقائياً بالذكاء الاصطناعي عند النشر، بلا أي تدخل منك.</p>
         </div>
+
+        {/* مقياس جاهزية النشر — يعلّم المنشئ كيف يرفع وصول برومبته قبل النشر */}
+        <section aria-label="جاهزية النشر" className="card flex flex-col gap-3 p-4 shadow-soft">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-charcoal">جاهزية النشر</h2>
+            <span className={`text-sm font-semibold tabular-nums ${ready.tone}`}>{ready.total}٪ · {ready.label}</span>
+          </div>
+          <span className="h-2 overflow-hidden rounded-full bg-mist"><span className="block h-full rounded-full bg-brand transition-[width] duration-300" style={{ width: `${ready.total}%` }} /></span>
+          <ul className="flex flex-col gap-1.5">
+            {ready.checks.map((c) => (
+              <li key={c.key} className="flex items-start gap-2 text-caption">
+                <span className={`mt-0.5 shrink-0 ${c.ok ? "text-ok-ink" : "text-smoke"}`}>{c.ok ? <Check size={14} /> : <X size={14} />}</span>
+                <span className={c.ok ? "text-charcoal" : "text-graphite"}><b className="font-medium">{c.label}</b>{!c.ok && <span className="text-smoke"> — {c.hint}</span>}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </>)}
 
       <div className="sticky bottom-[calc(84px+env(safe-area-inset-bottom))] z-10 -mx-4 bg-fog px-4 pb-2 pt-2">
