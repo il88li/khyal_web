@@ -129,7 +129,7 @@ function Enhancer() {
           <motion.section initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="card flex min-h-0 flex-1 flex-col gap-2 p-4">
             {err && !out ? (
-              <div className="flex-1 overflow-y-auto"><p className="text-sm">{err.split("\n")[0]}</p>{err.includes("\n") && <p dir="ltr" className="mt-2 break-all text-caption text-smoke">{err.split("\n").slice(1).join(" ")}</p>}</div>
+              <div className="flex-1 overflow-y-auto"><p className="text-sm">{err.split("\n")[0]}</p></div>
             ) : (<>
               <div className="flex shrink-0 items-center justify-between gap-2">
                 <div className="flex gap-1">{(["res", "diff"] as const).map((v) => <button key={v} onClick={() => setView(v)} className={`chip !h-10 px-3 text-base font-semibold ${view === v ? "chip-brand" : ""}`}>{v === "res" ? "النتيجة" : "الفرق"}</button>)}</div>

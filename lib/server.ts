@@ -1,7 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import { cookies } from "next/headers";
@@ -12,6 +12,23 @@ import { SETUP_SQL } from "./setup-sql";
 // lib/admin.ts — خادم فقط: تحقق scrypt، جلسة ساعة (httpOnly)، CSRF، service client، audit/error log، إعدادات النظام
 
 export const svc = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+
+/** يحوّل مفتاحاً (معرّف مستخدم أو بصمة IP) إلى uuid ثابت — لتخزين العدّاد في rate_hits */
+const uuidOf = (k: string) => {
+  const h = createHash("sha256").update("rate:" + k).digest("hex").slice(0, 32);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
+/**
+ * حدّ المعدّل عبر مخزن مشترك (جدول rate_hits في Postgres) — صالح لبيئات serverless،
+ * بخلاف الخرائط في الذاكرة المحلية التي تُصفَّر مع كل مثيل. يرجع durable=false إن لم تُنفَّذ الدالة بعد.
+ */
+export async function rateHit(key: string, limit: number, windowSec = 60): Promise<{ ok: boolean; durable: boolean }> {
+  try {
+    const { data, error } = await svc().rpc("rate_hit_window", { p_user: uuidOf(key), p_limit: limit, p_window: windowSec });
+    if (error) return { ok: true, durable: false };
+    return { ok: data !== false, durable: true };
+  } catch { return { ok: true, durable: false }; }
+}
 const sign = (s: string) => createHmac("sha256", process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD_HASH || "x").update(s).digest("base64url");
 const eq = (a: string, b: string) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
 

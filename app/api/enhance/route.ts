@@ -1,14 +1,12 @@
 // app/api/enhance/route.ts — بث SSE للنص المحسّن، بلا أي إفصاح عن النماذج أو المزودين
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { buildMessages, getSettings, logError, streamEnhance, svc } from "@/lib/server";
+import { buildMessages, getSettings, logError, rateHit, streamEnhance, svc } from "@/lib/server";
 
 export const runtime = "nodejs";
 // مهلة موحّدة مع مهل الاتصال بالنموذج (lib/server.ts) — تمنع قطع الردود الطويلة
 // سقف Vercel Hobby هو 60ث، وهو أقصى ما تسمح به الباقة المجانية.
 export const maxDuration = 60;
-const hits = new Map<string, number[]>(); // rate limit بسيط: 10 طلبات/دقيقة (استبدله بـ Upstash عند التوسع)
-const guests = new Map<string, number[]>(); // تجربة الزائر: 2/ساعة و5/يوم لكل عنوان — بلا تسجيل
 
 /** ينزع من كل حدث في البث أي حقل يكشف التقنية (اسم النموذج، المزوّد، السجلات) قبل وصوله إلى المستخدم */
 function scrub(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
@@ -42,25 +40,19 @@ export async function POST(req: Request) {
     cookies: { getAll: () => store.getAll(), setAll: () => {} },
   });
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) { // تجربة مجانية بلا تسجيل (حدّ صارم يحمي التكلفة)
+  if (!user) { // تجربة مجانية بلا تسجيل (حدّ صارم يحمي التكلفة) عبر مخزن مشترك
     const ip = (req.headers.get("x-forwarded-for") ?? "local").split(",")[0].trim() || "local";
-    const now = Date.now(), rec = (guests.get(ip) ?? []).filter((t) => now - t < 86_400_000);
-    const hour = rec.filter((t) => now - t < 3_600_000);
-    if (hour.length >= 2 || rec.length >= 5) return Response.json({ error: "guest_limit" }, { status: 429 });
-    guests.set(ip, [...rec, now]);
+    const hour = await rateHit(`guest-h:${ip}`, 2, 3600);
+    const day = hour.ok && hour.durable ? await rateHit(`guest-d:${ip}`, 5, 86400) : { ok: true, durable: true };
+    if (hour.durable && (!hour.ok || !day.ok)) return Response.json({ error: "guest_limit" }, { status: 429 });
   }
 
   const cfg = await getSettings();
   if (cfg.flags?.enhancer === false) return Response.json({ error: "disabled" }, { status: 503 });
-  if (user) { // حدّ المسجّلين (الضيف له حدّه الخاص أعلاه)
+  if (user) { // حدّ المسجّلين (الضيف له حدّه الخاص أعلاه) عبر مخزن مشترك
     const limit = cfg.rate ?? 10;
-    let allowed: any = true, rlErr: any = null;
-    try { ({ data: allowed, error: rlErr } = await svc().rpc("rate_hit", { p_user: user.id, p_limit: limit })); } catch (e) { rlErr = e; } // دائم عبر Postgres
-    if (rlErr) { // احتياطي إن لم يُنفَّذ SQL بعد: ذاكرة المثيل
-      const now = Date.now(), recent = (hits.get(user.id) ?? []).filter((t) => now - t < 60_000);
-      if (recent.length >= limit) return Response.json({ error: "rate_limited" }, { status: 429 });
-      hits.set(user.id, [...recent, now]);
-    } else if (!allowed) return Response.json({ error: "rate_limited" }, { status: 429 });
+    const r = await rateHit(`user:${user.id}`, limit, 60);
+    if (r.durable && !r.ok) return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
   const b = await req.json();

@@ -93,8 +93,23 @@ async function fetchPage(tab: Tab, cat: number | null, page: number): Promise<Pa
       list.forEach((r) => Object.assign(r, M.get(r.id) ?? {}));
     }
   }
-  await withMeta(list);
+  await gateRows(list);
   return { rows: list, note };
+}
+
+/** يفرض حدود رؤية البرومبت من جهة الخادم (RPC) ويجلب العنوان/الوسوم — مع احتياطٍ إن لم تُنفَّذ الهجرة */
+async function gateRows(list: PromptRow[]) {
+  if (!list.length) return;
+  try {
+    const { data, error } = await sb.rpc("prompts_gated", { p_ids: list.map((r) => r.id) });
+    const arr = (data ?? []) as any[];
+    if (!error && arr.length) {
+      const M = new Map(arr.map((r) => [r.id, r]));
+      list.forEach((r) => { const g = M.get(r.id); if (g) Object.assign(r, { body: g.body, enhanced: g.enhanced, locked: g.locked, hidden: g.hidden, title: g.title ?? r.title, tags: g.tags ?? r.tags }); });
+      return;
+    }
+  } catch {}
+  await withMeta(list); // احتياطي: عنوان/وسوم فقط
 }
 
 const Skeleton = () => (
@@ -254,8 +269,6 @@ export default function Feed() {
 
   return (
     <main className="feed-main flex flex-col gap-4">
-      <div className="xl:hidden mb-1"><AdSlot slot="home" /></div>
-
       <header
         className="feed-sticky-header sticky z-30 -mx-3 flex flex-col border-b border-silver bg-fog px-3 pb-2 pt-2 md:mx-0 md:px-0"
       >
@@ -318,7 +331,7 @@ export default function Feed() {
         {items.map((p, i) => (
           <Fragment key={p.id}>
             <PromptCard p={p} i={i} />
-            {(i + 1) % 5 === 0 && <AdSlot slot="feed" />}
+            {(i + 1) % 12 === 0 && <div className="xl:hidden"><AdSlot slot="feed" /></div>}
           </Fragment>
         ))}
         {loading && Array.from({ length: items.length ? 1 : 3 }).map((_, i) => <Skeleton key={i} />)}

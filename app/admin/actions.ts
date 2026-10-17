@@ -57,9 +57,9 @@ export async function catSave(c: string, r: { id?: number; slug: string; name_ar
 }
 export async function catDelete(c: string, id: number) { const a = await requireAdmin(c); await svc().from("categories").delete().eq("id", id); await audit(a, "category.delete", String(id)); return true; }
 
-export async function getCfg(c: string) { await requireAdmin(c); const s = await getSettings(); return { flags: s.flags ?? {}, rate: s.rate ?? 10, models: s.models ?? { disabled: [], default: "" }, all: await getFreeModels() }; }
+export async function getCfg(c: string) { await requireAdmin(c); const s = await getSettings(); return { flags: s.flags ?? {}, rate: s.rate ?? 10, visibility: s.visibility ?? { guest: 0.5, free: 0.8 }, limits: s.limits ?? { guestHour: 2, guestDay: 5, classify: 8 }, models: s.models ?? { disabled: [], default: "" }, all: await getFreeModels() }; }
 export async function setCfg(c: string, key: string, value: unknown) {
-  const a = await requireAdmin(c); if (!["flags", "rate", "models"].includes(key)) throw new Error("bad_key");
+  const a = await requireAdmin(c); if (!["flags", "rate", "models", "visibility", "limits"].includes(key)) throw new Error("bad_key");
   await svc().from("settings").upsert({ key, value }); bustSettings(); await audit(a, `settings.${key}`, key, value); return true;
 }
 /** الإعلانات: مفتاح settings باسم ad:<slot> (feed | home) */
@@ -80,6 +80,18 @@ export async function setAd(c: string, slot: string, ad: { title: string; body?:
 }
 export async function logs(c: string, kind: "audit" | "error") {
   await requireAdmin(c); return (await svc().from(kind === "audit" ? "audit_log" : "error_log").select("*").order("created_at", { ascending: false }).limit(50)).data ?? [];
+}
+/** إحصاءات الإعلانات: ظهور/نقر لكل مساحة خلال آخر 30 يوماً */
+export async function adStats(c: string) {
+  await requireAdmin(c);
+  const since = new Date(Date.now() - 30 * 864e5).toISOString();
+  const { data } = await svc().from("ad_events").select("slot,kind").gte("created_at", since).limit(10000);
+  const out: Record<string, { impression: number; click: number }> = {};
+  for (const r of (data ?? []) as { slot: string; kind: string }[]) {
+    const o = (out[r.slot] ??= { impression: 0, click: 0 });
+    if (r.kind === "click") o.click++; else o.impression++;
+  }
+  return out;
 }
 export async function broadcast(c: string, title: string, body: string) {
   const a = await requireAdmin(c), s = svc(); if (!title.trim() || !body.trim()) throw new Error("empty");
@@ -108,7 +120,7 @@ export async function health(c: string) {
   for (const k of ["NEXT_PUBLIC_FIREBASE_API_KEY", "FIREBASE_SERVICE_ACCOUNT", "PUSH_WEBHOOK_SECRET"]) out.push({ name: `متغير ${k} (اختياري)`, ok: !!process.env[k] });
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const s = svc();
-    const tables = ["profiles", "categories", "prompts", "likes", "saves", "follows", "comments", "library", "notifications", "push_tokens", "reports", "blocks", "audit_log", "error_log", "usage", "settings", "rate_hits"];
+    const tables = ["profiles", "categories", "prompts", "likes", "saves", "follows", "comments", "library", "notifications", "push_tokens", "reports", "blocks", "audit_log", "error_log", "usage", "settings", "rate_hits", "ad_events"];
     const res = await Promise.all(tables.map(async (t) => { const { error } = await s.from(t).select("*", { count: "exact", head: true }); return { name: `جدول ${t}`, ok: !error, detail: error?.message }; }));
     out.push(...res);
     const b = await s.storage.getBucket("prompts"); out.push({ name: "حاوية الصور prompts", ok: !!b.data, detail: b.error?.message });

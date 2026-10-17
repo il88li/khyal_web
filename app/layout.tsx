@@ -40,6 +40,15 @@ export const metadata: Metadata = {
   title: "خيال",
   description: "مساحة عربية لصنّاع المحتوى لصياغة البرومبتات وتحسينها ومشاركتها.",
   manifest: "/manifest.webmanifest",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "خيال",
+    locale: "ar",
+    title: "خيال — فكرة جيدة تستحق صياغة جيدة",
+    description: "حسّن برومبتاتك بالعربية، شاركها، واحفظ ما يستحق العودة إليه.",
+  },
+  twitter: { card: "summary_large_image", title: "خيال", description: "مساحة عربية لصياغة البرومبتات وتحسينها." },
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "any" }, { url: "/icons/khiyal-mark-192-v5.png", type: "image/png", sizes: "192x192" }],
     apple: "/icons/khiyal-apple-touch-v5.png",

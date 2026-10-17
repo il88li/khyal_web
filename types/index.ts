@@ -5,6 +5,8 @@ export type PromptRow = {
   id: string; body: string; enhanced: string | null; model: string | null; images: Img[];
   like_count: number; comment_count: number; created_at: string; category_id: number | null;
   title?: string | null; tags?: string[] | null; author: Author; liked?: boolean; saved?: boolean; forked_from?: string | null; copy_count?: number; fork_count?: number;
+  /** مقصوص من جهة الخادم (RPC prompt_gated): true إن كان باقي النص مخفياً بحسب المستوى */
+  locked?: boolean; hidden?: number;
 };
 
 /** تحديات اليوم: تدور حسب رقم اليوم (بطاقة التحدي + الإشعار اليومي) */

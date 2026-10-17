@@ -43,6 +43,10 @@ async function getFollowed(): Promise<Set<string>> {
 }
 const invalidateFollowed = () => { followedSet = null; followedPromise = null; };
 
+/* حركات الدخول المتتابعة: تُقصَر على أول ظهور في الجلسة فقط */
+let entranceSeen = false;
+const MAX_STAGGER = 4, STEP = 0.05;
+
 function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const cats = useCategories();
   const [liked, setLiked] = useState(!!p.liked);
@@ -66,6 +70,8 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const likeBtn = useRef<HTMLButtonElement>(null);
   const lastTap = useRef(0);
   const timer = useRef<any>();
+  const firstRun = useRef(!entranceSeen);
+  useEffect(() => { if (firstRun.current) entranceSeen = true; }, []);
 
   useEffect(() => setCount(p.like_count), [p.like_count]);
 
@@ -150,8 +156,10 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
 
   const hasBoth = !!p.enhanced && p.enhanced !== p.body;
   const shown = orig ? p.body : override ?? p.enhanced ?? p.body;
-  // الغلاف المقتطع يظهر للجميع؛ وزر «عرض البرومبت كاملاً» يكشف النص الكامل للجميع أيضاً.
-  const gate = previewOf(shown, "guest");
+  // المقصوص يأتي من الخادم (RPC prompt_gated) بحسب مستوى المستخدم، وإلا نحسبه محلياً كاحتياطٍ.
+  const serverGated = typeof p.locked === "boolean";
+  const gate = serverGated ? { shown, locked: !!p.locked, hidden: p.hidden ?? 0 } : previewOf(shown, "guest");
+  const revealEnabled = !(serverGated && p.locked); // النص مقصوص من الخادم فلا فائدة من زر الكشف
   const vars = extractVars(shown);
 
   const copy = async () => {
@@ -188,9 +196,9 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 16 }}
+      initial={firstRun.current ? { opacity: 0, y: 16 } : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 420, damping: 34, delay: Math.min(i, 6) * 0.07 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34, delay: firstRun.current ? Math.min(i, MAX_STAGGER) * STEP : 0 }}
       className="prompt-card card"
     >
       <header className="prompt-card-head">
@@ -266,19 +274,21 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
             </div>
           )}
           {cat && <span className="chip">{cat}</span>}
-          {p.tags?.map((t) => <span key={t} className="chip">{t}</span>)}
-          {hot && <span className="chip chip-gold">🔥 ترند</span>}
-          {fresh && <span className="chip">جديد</span>}
-          {trusted && <span className="chip chip-ok">موثّق</span>}
+          {/* وسوم قليلة فقط: وسمان كحدّ أقصى لتقليل الزحام */}
+          {p.tags?.slice(0, 2).map((t) => <span key={t} className="chip">{t}</span>)}
+          {/* شارة حالة واحدة فقط — بالأولوية: ترند ← جديد */}
+          {hot ? <span className="chip chip-gold">🔥 ترند</span>
+            : fresh ? <span className="chip">جديد</span>
+            : trusted ? <span className="chip chip-ok">موثّق</span> : null}
         </div>
       )}
 
       <div className="prompt-card-copy-wrap">
-        <div onClick={tapText} className="prompt-card-copy" role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tapText()} aria-label="عرض البرومبت كاملًا">
+        <div onClick={tapText} className="prompt-card-copy" role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tapText()} aria-label={revealEnabled ? "عرض البرومبت كاملًا" : "مقتطف من البرومبت"}>
           {p.title && <p className="mb-1 text-base font-bold text-charcoal">{p.title}</p>}
           <p className="line-clamp-2 whitespace-pre-wrap text-base leading-relaxed text-charcoal">{gate.shown}{gate.locked && "…"}</p>
         </div>
-        {(shown.length > 80 || shown.includes("\n")) && <>
+        {(shown.length > 80 || shown.includes("\n")) && revealEnabled && <>
           {/* البرومبت مخفي افتراضياً — يُكشف داخل البطاقة نفسها بالسحب للأسفل (بلا نافذة منبثقة) */}
           <AnimatePresence initial={false}>
             {revealed && (
@@ -301,6 +311,9 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
             {revealed ? "إخفاء البرومبت" : "عرض البرومبت كاملاً"}
           </motion.button>
         </>}
+        {!revealEnabled && (
+          <Link href="/pricing" className="prompt-lock-note">باقي البرومبت لمشتركي خيال — اعرف المزيد</Link>
+        )}
       </div>
 
       {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && (

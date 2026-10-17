@@ -1,10 +1,9 @@
 // app/api/classify/route.ts — عنوان + تصنيف + وسوم تلقائية للبرومبت عبر النماذج المجانية (لا يمنع النشر أبداً)
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { completeText, logError } from "@/lib/server";
+import { completeText, logError, rateHit } from "@/lib/server";
 
 export const runtime = "nodejs";
-const hits = new Map<string, number[]>();
 
 const fallbackTitle = (t: string) => t.replace(/\s+/g, " ").trim().split(" ").slice(0, 7).join(" ").slice(0, 60);
 
@@ -14,9 +13,8 @@ export async function POST(req: Request) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return Response.json({ error: "auth_required" }, { status: 401 });
 
-  const now = Date.now(), recent = (hits.get(user.id) ?? []).filter((t) => now - t < 60_000);
-  if (recent.length >= 8) return Response.json({ error: "rate_limited" }, { status: 429 });
-  hits.set(user.id, [...recent, now]);
+  const r = await rateHit(`classify:${user.id}`, 8, 60);
+  if (r.durable && !r.ok) return Response.json({ error: "rate_limited" }, { status: 429 });
 
   const b = await req.json().catch(() => null);
   const text = String(b?.text ?? "").trim().slice(0, 6000);

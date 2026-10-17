@@ -36,7 +36,9 @@ export function explain(e: any): string {
   if (/JWT|expired|not authenticated/i.test(m)) return "انتهت الجلسة، سجّل الدخول من جديد.";
   if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return "تعذّر الاتصال، تحقق من الإنترنت.";
   if (/too large|maximum allowed size/i.test(m)) return "حجم الملف كبير جداً.";
-  return `حدث خطأ: ${m}`.slice(0, 110);
+  // لا نُسرّب أي تفاصيل تقنية (أسماء خدمات/مزودين/جداول) في رسائل الواجهة
+  try { console.error("[khiyal]", m); } catch {}
+  return "حدث خطأ غير متوقّع، أعد المحاولة بعد لحظات.";
 }
 
 /** يختصر الأعداد: 1200 → 1.2K */

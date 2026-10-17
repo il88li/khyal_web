@@ -384,3 +384,66 @@ notify pgrst, 'reload schema';   -- تحديث ذاكرة واجهة API فور�
 alter table profiles add column if not exists plan text not null default 'free';
 alter table prompts add column if not exists title text;
 alter table prompts add column if not exists tags text[] default '{}';
+
+-- ===== 8) الإعلانات: تتبّع الظهور والنقر (خدمة فقط — بلا سياسات عامة) =====
+create table if not exists ad_events (id bigserial primary key, slot text not null, kind text not null, created_at timestamptz not null default now());
+create index if not exists ad_events_idx on ad_events (slot, kind, created_at desc);
+alter table ad_events enable row level security;
+
+-- ===== 9) حدّ المعدّل عبر مخزن مشترك (جدول rate_hits) بنافذة زمنية مرنة =====
+create or replace function rate_hit_window(p_user uuid, p_limit int, p_window int) returns boolean language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  delete from rate_hits where ts < now() - interval '2 days';
+  select count(*) into n from rate_hits where user_id = p_user and ts > now() - make_interval(secs => p_window);
+  if n >= p_limit then return false; end if;
+  insert into rate_hits (user_id) values (p_user);
+  return true;
+end $$;
+create or replace function rate_hit(p_user uuid, p_limit int) returns boolean language sql security definer set search_path = public as
+$$ select rate_hit_window(p_user, p_limit, 60) $$;
+revoke execute on function rate_hit_window(uuid, int, int) from public, anon, authenticated;
+revoke execute on function rate_hit(uuid, int) from public, anon, authenticated;
+
+-- ===== 10) رؤية البرومبت من جهة الخادم بحسب المستوى (RPC) =====
+-- المستوى: pro للمشترك، free للمسجّل، guest للزائر. النسب من settings:visibility (يعدّلها الأدمن).
+create or replace function caller_tier() returns text language sql stable security definer set search_path = public as
+$$ select case when auth.uid() is null then 'guest'
+     when coalesce((select plan from profiles where id = auth.uid()), 'free') = 'pro' then 'pro'
+     else 'free' end $$;
+
+create or replace function prompt_gated(p_id uuid) returns json language plpgsql stable security definer set search_path = public as $$
+declare r prompts; t text; ratio numeric; body_g text; enh_g text; base text; locked boolean; hid int;
+begin
+  select * into r from prompts where id = p_id;
+  if r.id is null then return null; end if;
+  if not can_view(r.author_id) then return null; end if;   -- يحترم الخصوصية والحظر
+  t := caller_tier();
+  if auth.uid() = r.author_id or t = 'pro' then
+    return json_build_object('id', r.id, 'body', r.body, 'enhanced', r.enhanced, 'locked', false, 'hidden', 0,
+      'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
+      'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
+      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+  end if;
+  ratio := case t when 'free' then coalesce((select (value->>'free')::numeric from settings where key = 'visibility'), 0.8)
+                  else coalesce((select (value->>'guest')::numeric from settings where key = 'visibility'), 0.5) end;
+  body_g := left(r.body, greatest(60, floor(coalesce(char_length(r.body), 0) * ratio)::int));
+  enh_g := case when r.enhanced is null then null
+                else left(r.enhanced, greatest(60, floor(char_length(r.enhanced) * ratio)::int)) end;
+  base := coalesce(r.enhanced, r.body);
+  locked := char_length(base) > coalesce(char_length(enh_g), char_length(body_g));
+  hid := char_length(base) - coalesce(char_length(enh_g), char_length(body_g));
+  return json_build_object('id', r.id, 'body', body_g, 'enhanced', enh_g, 'locked', locked, 'hidden', hid,
+    'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
+    'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
+    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url) from profiles p where p.id = r.author_id));
+end $$;
+grant execute on function prompt_gated(uuid) to anon, authenticated;
+
+-- يُرجع كل برومبت مقصوصاً بحسب مستوى المتصل (لخلاصات الفيد) — بلا النص الكامل
+create or replace function prompts_gated(p_ids uuid[]) returns setof json language sql stable security definer set search_path = public as
+$$ select prompt_gated(x) from unnest(p_ids) as x $$;
+grant execute on function prompts_gated(uuid[]) to anon, authenticated;
+
+notify pgrst, 'reload schema';
+

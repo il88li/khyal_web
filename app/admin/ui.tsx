@@ -88,10 +88,24 @@ export function Panel({ csrf }: { csrf: string }) {
   function System() {
     const [d, load] = useData(() => A.getCfg(csrf), []), [t, setT] = useState(""), [b, setB] = useState(""); if (!d) return null;
     const F: [string, string][] = [["enhancer", "المحسّن"], ["publishing", "النشر"], ["signups", "التسجيل الجديد"]];
+    const Num = ({ label, value, onSave }: { label: string; value: number; onSave: (v: number) => void }) => (
+      <div className={`${card} flex items-center gap-4`}><span className="flex-1 text-sm">{label}</span>
+        <input type="number" min={0} step={label.includes("%") ? 5 : 1} defaultValue={Math.round(label.includes("%") ? value * 100 : value)} onBlur={(e) => onSave(label.includes("%") ? Math.min(100, Math.max(0, +e.target.value || 0)) / 100 : Math.max(0, +e.target.value || 0))} className={`${inp} !w-24 text-center`} /></div>);
     return <div className="flex flex-col gap-4">
       <div className={card}>{F.map(([k, l]) => <Tog key={k} label={l} on={d.flags[k] !== false} set={(v) => act(() => A.setCfg(csrf, "flags", { ...d.flags, [k]: v }), load)} />)}</div>
       <div className={`${card} flex items-center gap-4`}><span className="flex-1 text-sm">حد التحسين في الدقيقة</span>
         <input type="number" min={1} defaultValue={d.rate} onBlur={(e) => act(() => A.setCfg(csrf, "rate", Math.max(1, +e.target.value || 10)), load)} className={`${inp} !w-24 text-center`} /></div>
+      <div className="flex flex-col gap-2">
+        <p className="text-caption text-smoke">نسبة ظهور البرومبت للزوار والمستخدمين المجانيين</p>
+        <Num label="الزوار %" value={d.visibility.guest} onSave={(v) => act(() => A.setCfg(csrf, "visibility", { ...d.visibility, guest: v }), load)} />
+        <Num label="المجاني %" value={d.visibility.free} onSave={(v) => act(() => A.setCfg(csrf, "visibility", { ...d.visibility, free: v }), load)} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-caption text-smoke">حدود الاستخدام (طلبات لكل نافذة)</p>
+        <Num label="تحسين الزوار / ساعة" value={d.limits.guestHour} onSave={(v) => act(() => A.setCfg(csrf, "limits", { ...d.limits, guestHour: v }), load)} />
+        <Num label="تحسين الزوار / يوم" value={d.limits.guestDay} onSave={(v) => act(() => A.setCfg(csrf, "limits", { ...d.limits, guestDay: v }), load)} />
+        <Num label="تصنيف / دقيقة" value={d.limits.classify} onSave={(v) => act(() => A.setCfg(csrf, "limits", { ...d.limits, classify: v }), load)} />
+      </div>
       <div className={`${card} flex flex-col gap-2`}><p className="text-sm font-medium">إشعار جماعي</p><input className={inp} placeholder="العنوان" value={t} onChange={(e) => setT(e.target.value)} />
         <textarea className={`${inp} py-3`} rows={3} placeholder="النص" value={b} onChange={(e) => setB(e.target.value)} />
         <button disabled={!t || !b} className={dark} onClick={() => confirm("إرسال لكل المستخدمين؟") && act(() => A.broadcast(csrf, t, b), () => { setT(""); setB(""); }, "أُرسل")}>إرسال</button></div>
@@ -100,11 +114,18 @@ export function Panel({ csrf }: { csrf: string }) {
   }
   function Ads() {
     const [d, load] = useData(() => A.getAds(csrf), []);
+    const [stats] = useData(() => A.adStats(csrf), []);
     const [slot, setSlot] = useState<"feed" | "home">("feed");
     const [f, setF] = useState({ title: "", body: "", cta: "", href: "", image: "", active: true });
     useEffect(() => { const a = d?.[slot]; setF(a ? { title: a.title ?? "", body: a.body ?? "", cta: a.cta ?? "", href: a.href ?? "", image: a.image ?? "", active: a.active !== false } : { title: "", body: "", cta: "", href: "", image: "", active: true }); }, [d, slot]);
-    const L = { feed: "الخلاصة (كل 5 بطاقات)", home: "الشاشة الرئيسية (أعلى الخلاصة والعمود الجانبي)" } as const;
+    const L = { feed: "الخلاصة (كل 12 بطاقة)", home: "العمود الجانبي (سطح المكتب)" } as const;
+    const NM: Record<string, string> = { feed: "الخلاصة", home: "الجانب" };
     return <div className="flex flex-col gap-4">
+      <div className={card}>
+        <p className="mb-2 text-sm font-medium">القياس (آخر 30 يوماً)</p>
+        <div className="grid grid-cols-2 gap-4">{(["feed", "home"] as const).map((k) => { const s = stats?.[k] ?? { impression: 0, click: 0 }; const ctr = s.impression ? Math.round((s.click / s.impression) * 1000) / 10 : 0;
+          return <div key={k} className="rounded-xl bg-white/[0.03] p-4"><p className="text-caption text-smoke">{NM[k]}</p><p className="text-lg font-semibold tabular-nums">{s.impression} <span className="text-caption text-smoke">ظهور</span></p><p className="text-caption text-smoke tabular-nums">{s.click} نقر · {ctr}%</p></div>; })}</div>
+      </div>
       <div className="flex gap-2">{(Object.keys(L) as (keyof typeof L)[]).map((k) => <button key={k} onClick={() => setSlot(k)} className={`${btn} ${slot === k ? "!bg-brand-tint !text-brand-ink" : ""}`}>{L[k]}</button>)}</div>
       <div className={`${card} flex flex-col gap-2`}>
         <p className="text-caption text-smoke">{d?.[slot] ? "إعلان محفوظ" : "لا إعلان — تظهر دعوة «أعلن لدى خيال»"}</p>

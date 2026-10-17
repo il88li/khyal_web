@@ -111,7 +111,7 @@ export default function NewPrompt() {
         </div>
       </>)}
 
-      <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-10 -mx-4 bg-fog px-4 pb-2 pt-2">
+      <div className="sticky bottom-[calc(84px+env(safe-area-inset-bottom))] z-10 -mx-4 bg-fog px-4 pb-2 pt-2">
         <button onClick={publish} disabled={busy || !text.trim()} aria-busy={busy} className="btn btn-primary btn-lg w-full">
           {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}{PHASE[phase]}
         </button>
