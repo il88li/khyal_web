@@ -153,3 +153,65 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
   .workspace-shell { padding-top: calc(54px + env(safe-area-inset-top)); }
   .feed-sticky-header { top: calc(54px + env(safe-area-inset-top)) !important; }
 }
+
+/* ==================================================================
+   الفيد وبطاقة البرومبت — رفع الجودة البصريّة:
+   تبويبات واضحة، تفاعل لمس/فأرة، وهيكل تحميل مطابق للبطاقة.
+   يبقى الطابع الحالي: أسطح مسطحة، والارتفاع (الظل) عند التفاعل فقط.
+   ================================================================== */
+
+/* ── الهيدر اللاصق: فاصل شعري رقيق + تعتيم خلفي للمحتوى المار تحته ── */
+.feed-sticky-header {
+  border-bottom: 1px solid rgb(var(--c-line) / .6) !important;
+  box-shadow: none !important;
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .feed-sticky-header {
+    background: rgb(var(--c-fog) / .9) !important;
+    backdrop-filter: blur(10px) saturate(1.1);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  }
+}
+
+/* ── شريط التبويبات: حبيبة اختيار مرتفعة بلون الهوية ── */
+.feed-tabs { width: 100%; }
+.feed-tabs > button {
+  min-height: 40px;
+  color: rgb(var(--c-ink-3));
+  font-weight: 600;
+}
+.feed-tabs > button[data-on="1"] { color: rgb(var(--brand-ink)); }
+.feed-tab-pill {
+  border-radius: 9999px;
+  background: rgb(var(--c-snow));
+  box-shadow: 0 1px 2px rgb(14 22 48 / .1), 0 5px 14px -6px rgb(14 22 48 / .2);
+}
+html.dark .feed-tab-pill {
+  background: rgb(255 255 255 / .1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .12);
+}
+
+/* ── شرائح الفئات: المحدد بلون الهوية الصريح ── */
+.feed-cat { transition: background-color .2s var(--ease), color .2s var(--ease); }
+.feed-cat[data-on="1"] {
+  background: rgb(var(--brand)) !important;
+  color: rgb(var(--on-brand)) !important;
+}
+
+/* ── ملاحظة التخصيص: بانر ناعم بأيقونة ── */
+.feed-note { display: inline-flex; align-items: center; gap: 8px; }
+.feed-note svg { flex: 0 0 auto; color: rgb(var(--brand)); }
+
+/* ── بطاقة البرومبت: ارتفاع خفيف عند المرور (أجهزة مؤشرة فقط) ── */
+@media (hover: hover) and (pointer: fine) {
+  .prompt-card { transition: box-shadow .22s var(--ease) !important; }
+  .prompt-card:hover { box-shadow: var(--float) !important; }
+}
+
+/* ── هيكل تحميل الفيد: يطابق أبعاد البطاقة لتقليل قفزة التخطيط ── */
+.prompt-card-skel { pointer-events: none; }
+.prompt-card-skel .prompt-card-media { aspect-ratio: 16 / 9; }
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-card, .feed-cat, .feed-tab-pill { transition: none !important; }
+}

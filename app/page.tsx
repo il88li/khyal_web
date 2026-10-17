@@ -98,10 +98,24 @@ async function fetchPage(tab: Tab, cat: number | null, page: number): Promise<Pa
 }
 
 const Skeleton = () => (
-  <div className="card flex h-[170px] animate-pulse flex-col gap-2.5 p-4.5">
-    <div className="h-7 w-32 rounded-full bg-mist" />
-    <div className="h-3.5 w-full rounded-full bg-mist" />
-    <div className="h-3.5 w-2/3 rounded-full bg-mist" />
+  <div className="card prompt-card prompt-card-skel" aria-hidden>
+    <div className="prompt-card-head">
+      <div className="skel h-10 w-10 shrink-0 rounded-full" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="skel h-3.5 w-28 rounded-full" />
+        <div className="skel h-3 w-16 rounded-full" />
+      </div>
+      <div className="skel h-8 w-20 shrink-0 rounded-full" />
+    </div>
+    <div className="prompt-card-media skel" />
+    <div className="prompt-card-copy-wrap flex flex-col gap-2">
+      <div className="skel h-3.5 w-full rounded-full" />
+      <div className="skel h-3.5 w-3/4 rounded-full" />
+    </div>
+    <div className="prompt-card-footer">
+      <div className="skel h-6 w-32 rounded-full" />
+      <div className="skel h-9 w-full rounded-full" />
+    </div>
   </div>
 );
 
@@ -245,24 +259,25 @@ export default function Feed() {
       <header
         className="feed-sticky-header sticky z-30 -mx-3 flex flex-col border-b border-silver bg-fog px-3 pb-2 pt-2 md:mx-0 md:px-0"
       >
-        <nav className="seg">
+        <nav className="seg feed-tabs" aria-label="تصفية الفيد">
           {TABS.map(([k, l]) => (
             <button key={k} data-on={tab === k ? "1" : undefined} onClick={() => setTab(k)} className="relative">
               {tab === k && (
                 <motion.span
                   layoutId="feed-tab"
-                  transition={{ type: "spring", stiffness: 450, damping: 36 }}
-                  className="absolute inset-0 rounded-lg bg-snow shadow-soft"
+                  transition={{ type: "spring", stiffness: 480, damping: 38 }}
+                  className="feed-tab-pill absolute inset-0"
                 />
               )}
-              <span className="relative">{l}</span>
+              <span className="relative z-10">{l}</span>
             </button>
           ))}
         </nav>
       </header>
 
       {tab === "foryou" && note && (
-        <p className="self-start rounded-xl bg-brand-tint px-3 py-2 text-caption font-medium text-brand-ink">
+        <p className="feed-note self-start rounded-full bg-brand-tint px-3.5 py-2 text-caption font-medium text-brand-ink">
+          <Sparkles size={14} />
           {note}
         </p>
       )}
@@ -273,7 +288,8 @@ export default function Feed() {
             <button
               key={c.id}
               onClick={() => setCat(c.id === cat ? null : c.id)}
-              className={`chip !h-8 shrink-0 px-3 text-caption font-semibold ${cat === c.id ? "chip-ink" : "bg-snow text-graphite"}`}
+              data-on={cat === c.id ? "1" : undefined}
+              className="chip feed-cat !h-8 shrink-0 bg-snow px-3 text-caption font-semibold text-graphite"
             >
               {c.name_ar}
             </button>
