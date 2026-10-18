@@ -411,7 +411,7 @@ begin
     return json_build_object('id', r.id, 'body', r.body, 'enhanced', r.enhanced, 'locked', false, 'hidden', 0,
       'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
       'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
+      'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified, 'card_fx', p.card_fx) from profiles p where p.id = r.author_id));
   end if;
   ratio := case t when 'free' then coalesce((select (value->>'free')::numeric from settings where key = 'visibility'), 0.8)
                   else coalesce((select (value->>'guest')::numeric from settings where key = 'visibility'), 0.5) end;
@@ -424,7 +424,7 @@ begin
   return json_build_object('id', r.id, 'body', body_g, 'enhanced', enh_g, 'locked', locked, 'hidden', hid,
     'title', r.title, 'tags', r.tags, 'images', r.images, 'category_id', r.category_id,
     'like_count', r.like_count, 'comment_count', r.comment_count, 'created_at', r.created_at,
-    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified) from profiles p where p.id = r.author_id));
+    'author', (select json_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url, 'verified', p.verified, 'card_fx', p.card_fx) from profiles p where p.id = r.author_id));
 end $$; exception when others then perform setup_fail('create or replace function prompt_gated(p_id uuid)', sqlerrm); end $s$;
 do $s$ begin grant execute on function prompt_gated(uuid) to anon, authenticated; exception when others then perform setup_fail('grant execute on function prompt_gated(uuid) to an', sqlerrm); end $s$;
 do $s$ begin create or replace function prompts_gated(p_ids uuid[]) returns setof json language sql stable security definer set search_path = public as
@@ -481,5 +481,24 @@ begin
   return json_build_object('ok', true);
 end $$; exception when others then perform setup_fail('create or replace function request_verification(p_', sqlerrm); end $s$;
 do $s$ begin grant execute on function request_verification(text) to authenticated; exception when others then perform setup_fail('grant execute on function request_verification(tex', sqlerrm); end $s$;
+do $s$ begin alter table profiles add column if not exists card_fx jsonb; exception when others then perform setup_fail('alter table profiles add column if not exists card', sqlerrm); end $s$;
+do $s$ begin create or replace function card_fx_valid(j jsonb) returns boolean language sql immutable as $$
+select j is null or (
+  jsonb_typeof(j) = 'object'
+  and coalesce(j->>'v', '1') = '1'
+  and coalesce(j->>'name', 'none')   in ('none', 'blur', 'decrypt', 'gradient')
+  and coalesce(j->>'stats', 'none')  in ('none', 'count')
+  and coalesce(j->>'bg', 'none')     in ('none', 'noise', 'dots')
+  and coalesce(j->>'cards', 'none')  in ('none', 'tilt', 'pixel')
+  and jsonb_typeof(coalesce(j->'prompts', '[]'::jsonb)) = 'array'
+  and jsonb_array_length(coalesce(j->'prompts', '[]'::jsonb)) <= 3
+  and not exists (
+    select 1 from jsonb_array_elements(coalesce(j->'prompts', '[]'::jsonb)) e
+    where jsonb_typeof(e.value) <> 'string'
+       or e.value::text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  )
+) $$; exception when others then perform setup_fail('create or replace function card_fx_valid(j jsonb) ', sqlerrm); end $s$;
+do $s$ begin alter table profiles drop constraint if exists profiles_card_fx_check; exception when others then perform setup_fail('alter table profiles drop constraint if exists pro', sqlerrm); end $s$;
+do $s$ begin alter table profiles add constraint profiles_card_fx_check check (card_fx_valid(card_fx)); exception when others then perform setup_fail('alter table profiles add constraint profiles_card_', sqlerrm); end $s$;
 do $s$ begin notify pgrst, 'reload schema'; exception when others then perform setup_fail('notify pgrst, ''reload schema''', sqlerrm); end $s$;
 select 'تمت التهيئة — ' || coalesce((select string_agg(step || ' → ' || error, E'\n') from setup_log), 'بلا أخطاء') as result;

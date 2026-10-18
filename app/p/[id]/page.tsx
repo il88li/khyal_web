@@ -8,11 +8,12 @@ import { Comments, Gallery } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { GatedPrompt } from "@/components/GatedPrompt";
 import { BadgeCheck } from "@/components/icons";
+import CreatorCardSlot from "@/components/CreatorCardSlot";
 
 type PublicPrompt = {
   id: string; body: string; enhanced: string | null; images: { url: string; w: number; h: number }[];
   title?: string | null; tags?: string[] | null; category_id?: number | null; locked?: boolean; hidden?: number;
-  author?: { id: string; display_name: string | null; username: string | null; verified?: boolean } | null;
+  author?: { id: string; display_name: string | null; username: string | null; avatar_url?: string | null; verified?: boolean; card_fx?: unknown } | null;
 };
 
 function client() {
@@ -27,7 +28,7 @@ async function get(id: string): Promise<PublicPrompt | null> {
     const { data, error } = await sb.rpc("prompt_gated", { p_id: id });
     if (!error && data) return data as PublicPrompt;
   } catch {}
-  const { data } = await sb.from("prompts").select("id,body,enhanced,images,title,tags,category_id,author:profiles!author_id(id,display_name,username)").eq("id", id).maybeSingle();
+  const { data } = await sb.from("prompts").select("id,body,enhanced,images,title,tags,category_id,author:profiles!author_id(id,display_name,username,avatar_url,card_fx)").eq("id", id).maybeSingle();
   return (data as unknown as PublicPrompt) ?? null;
 }
 
@@ -55,6 +56,17 @@ export default async function Page({ params }: { params: { id: string } }) {
             {p.author?.username && <span dir="ltr" className="truncate text-caption text-smoke">@{p.author.username}</span>}
           </div>
         </header>
+
+        {/* بطاقة المبدع المختصرة في المعاينة */}
+        {p.author?.id && p.author.card_fx != null && (
+          <CreatorCardSlot
+            compact
+            fxRaw={p.author.card_fx}
+            profileId={p.author.id}
+            profile={{ name, username: p.author.username, avatar_url: (p.author as { avatar_url?: string }).avatar_url, prompts: 0, likes: 0, followers: 0 }}
+            className="mb-1"
+          />
+        )}
 
         {p.images?.length ? (
           <div className="prompt-card-media"><Gallery images={p.images} /></div>

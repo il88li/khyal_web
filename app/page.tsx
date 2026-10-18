@@ -8,13 +8,31 @@ import { Loader2, Sparkles } from "@/components/icons";
 import PromptCard from "@/components/PromptCard";
 import { sb, uid, explain, withMeta } from "@/lib/supabase";
 import { rankForYou } from "@/lib/algorithm";
+import { hasCardFx } from "@/lib/cardFx";
+import CreatorCardSlot from "@/components/CreatorCardSlot";
 import Link from "next/link";
 import type { PromptRow } from "@/types";
+
+/* بطاقة المبدع في الخلاصة: مرة واحدة لكل كاتب في الجلسة */
+const feedCards = new Set<string>();
+function maybeFeedCard(p: PromptRow) {
+  const id = p.author?.id;
+  if (!id || feedCards.has(id) || !hasCardFx(p.author?.card_fx)) return null;
+  feedCards.add(id);
+  return (
+    <CreatorCardSlot
+      compact
+      fxRaw={p.author!.card_fx}
+      profileId={id}
+      profile={{ name: p.author!.display_name || p.author!.username || "مبدع خيال", username: p.author!.username, avatar_url: p.author!.avatar_url, prompts: 0, likes: 0, followers: 0 }}
+    />
+  );
+}
 
 const TABS = [["foryou", "مختار لك"], ["following", "أتابعه"], ["trending", "رائج"], ["cats", "الفئات"]] as const;
 type Tab = (typeof TABS)[number][0];
 const PAGE = 10;
-const SEL = "id,body,enhanced,model,images,like_count,comment_count,created_at,category_id,author:profiles!author_id(id,username,display_name,avatar_url)";
+const SEL = "id,body,enhanced,model,images,like_count,comment_count,created_at,category_id,author:profiles!author_id(id,username,display_name,avatar_url,card_fx)";
 type PageOut = { rows: PromptRow[]; note?: string };
 const cache: Record<string, { items: PromptRow[]; page: number; done: boolean; y: number; note?: string }> = {};
 
@@ -332,6 +350,8 @@ export default function Feed() {
         {items.map((p, i) => (
           <Fragment key={p.id}>
             <PromptCard p={p} i={i} />
+            {/* بطاقة المبدع في الخلاصة: لأول ظهور للكاتب في الجلسة */}
+            {maybeFeedCard(p)}
             {(i + 1) % 12 === 0 && <div className="xl:hidden"><AdSlot slot="feed" /></div>}
           </Fragment>
         ))}

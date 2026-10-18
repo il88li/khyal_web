@@ -1,6 +1,6 @@
 // types/index.ts — أنواع مشتركة
 export type Img = { url: string; w: number; h: number };
-export type Author = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; verified?: boolean };
+export type Author = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; verified?: boolean; card_fx?: unknown };
 export type VerificationStats = {
   ok: boolean; reason?: string; verified: boolean; status: string | null;
   prompts: number; min_prompts: number; likes: number; min_likes: number;

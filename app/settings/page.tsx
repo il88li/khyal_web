@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { VERSION, disablePush, enablePush, explain, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
 import { Bell, ChevronLeft, ChevronRight, Database, Languages, Lock, Palette, ShieldCheck, Trash2, User } from "@/components/icons";
 import type { LucideIcon } from "@/components/icons";
+
+const CardStudio = dynamic(() => import("@/components/CardStudio"), { ssr: false, loading: () => <div className="card h-64 animate-pulse bg-mist" /> });
 
 const field = "field px-4";
 function Section({ id, title, children, danger }: { id: string; icon?: LucideIcon; title: string; children: React.ReactNode; danger?: boolean }) {
@@ -141,6 +144,12 @@ export default function Settings() {
         </div>
         <Switch on={reduce} set={setR} label="تخفيف الحركة" hint="يقلل الحركات والانتقالات" />
         <Switch on={hap} set={pickHap} label="الاهتزاز عند التفاعل" />
+        <p className="divider" />
+        <div>
+          <h2 className="text-lg font-bold text-charcoal">بطاقتي</h2>
+          <p className="pb-1 text-caption text-smoke">اختر تأثيرات بطاقتك التي يراها زوّار ملفك</p>
+          <CardStudio />
+        </div>
       </Section>
       )}
 

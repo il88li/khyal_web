@@ -12,15 +12,16 @@ import { BottomSheet } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
 import { BADGES, BadgeStrip, VerifiedBadge, badgeStats, levelOf, nextStep, type BStats } from "@/components/badges";
+import CreatorCardSlot from "@/components/CreatorCardSlot";
 
-type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null };
+type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null; card_fx?: unknown };
 type Cell = { id: string; body: string; enhanced: string | null; images: { url: string }[]; like_count?: number };
 const SEL = "id,body,enhanced,images,like_count,comment_count,category_id,created_at,author_id";
 
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const [me, setMe] = useState<string | undefined>(), [p, setP] = useState<Prof | null>(null), [cells, setCells] = useState<Cell[]>([]), [saved, setSaved] = useState<Cell[]>([]);
-  const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
+  const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [likes, setLikes] = useState(0), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
   const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null), [verified, setVerified] = useState(false);
   async function change(kind: "cover_url" | "avatar_url", f?: File) {
     if (!f || !me) return; setUp(kind);
@@ -66,10 +67,11 @@ export default function Profile() {
   useEffect(() => {
     if (!pid) return;
     const count = (t: string, col: string) => { const q = sb.from(t).select("*", { count: "exact", head: true }).eq(col, pid); return t === "follows" ? q.eq("status", "accepted") : q; };
-    Promise.all([sb.from("profiles").select("id,username,display_name,avatar_url,cover_url,bio,is_private,links").eq("id", pid).maybeSingle(), count("follows", "following_id"), count("follows", "follower_id"), count("prompts", "author_id"),
+    Promise.all([sb.from("profiles").select("id,username,display_name,avatar_url,cover_url,bio,is_private,links,card_fx").eq("id", pid).maybeSingle(), count("follows", "following_id"), count("follows", "follower_id"), count("prompts", "author_id"),
       sb.from("prompts").select(SEL).eq("author_id", pid).order("created_at", { ascending: false }).limit(60),
-      me ? sb.from("follows").select("status").match({ follower_id: me, following_id: pid }).maybeSingle() : Promise.resolve({ data: null })]).then(([pr, a, b, c, ps, f]: any) => {
-      setP(pr.data ? { ...pr.data, streak: null } : null); setStats({ followers: a.count ?? 0, following: b.count ?? 0, prompts: c.count ?? 0 }); setCells(ps.data ?? []); setFol(f.data?.status === "accepted"); setPend(f.data?.status === "pending"); setReady(true);
+      sb.from("prompts").select("like_count").eq("author_id", pid),
+      me ? sb.from("follows").select("status").match({ follower_id: me, following_id: pid }).maybeSingle() : Promise.resolve({ data: null })]).then(([pr, a, b, c, ps, lk, f]: any) => {
+      setP(pr.data ? { ...pr.data, streak: null } : null); setStats({ followers: a.count ?? 0, following: b.count ?? 0, prompts: c.count ?? 0 }); setLikes((lk.data ?? []).reduce((s: number, x: any) => s + (x.like_count ?? 0), 0)); setCells(ps.data ?? []); setFol(f.data?.status === "accepted"); setPend(f.data?.status === "pending"); setReady(true);
     }).catch(() => { setErr(true); setReady(true); });
   }, [pid, me, tick]);
   useEffect(() => { // المحفوظات (لصاحب الحساب فقط)
@@ -214,6 +216,15 @@ export default function Profile() {
       {/*4 — نبذة وروابط */}
       {p?.bio && <p className="mx-auto px-4 pt-2 text-center text-sm leading-relaxed text-graphite">{p.bio}</p>}
       {!!p?.links?.length && <div className="flex flex-wrap justify-center gap-1.5 px-4 pt-2">{p.links.map((l) => <a key={l} href={l} target="_blank" rel="noopener noreferrer nofollow" dir="ltr" className="chip chip-info max-w-[220px] truncate px-3">{l.replace(/^https?:\/\//, "")}</a>)}</div>}
+
+      {/*4ب — بطاقة المبدع بتأثيرات React Bits (تُعرض لزوّار الملف) */}
+      {p && !hidden && (
+        <CreatorCardSlot
+          profileId={p.id}
+          profile={{ name: p.display_name || p.username || "مبدع خيال", username: p.username, avatar_url: p.avatar_url, cover_url: p.cover_url, prompts: stats.prompts, likes, followers: stats.followers }}
+          className="mx-4 mt-4"
+        />
+      )}
 
       {/*5 — الإحصاءات: ثلاثة أعمدة بلا بطاقات (طاقة الأرقام وحدها) */}
       <dl className="grid w-full grid-cols-3 gap-4 px-4 pt-4">
