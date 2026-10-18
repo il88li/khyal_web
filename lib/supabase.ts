@@ -6,11 +6,14 @@ import { useEffect, useState } from "react";
 import type { Img } from "@/types";
 
 // lib/supabase.ts — عميل المتصفح الموحّد + مساعد التنبيهات
-const ssr = typeof window === "undefined"; // أثناء البناء/الـ prerender فقط
-export const sb = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || (ssr ? "https://placeholder.supabase.co" : ""),
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (ssr ? "placeholder" : "")
-);
+// قيم احتياطية عند غياب متغيّرات البيئة (نشر بلا env): الحزم لا ينهار عند الاستيراد،
+// وتفشل الطلبات لاحقاً برقم خطأ يُعرض كرسالة عربية عبر explain() بدل استثناء أثناء التحميل.
+const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  try { console.error("[khiyal] NEXT_PUBLIC_SUPABASE_URL غير مضبوط — عميل Supabase يعمل بقيم احتياطية ولن ينجح في الطلبات"); } catch {}
+}
+export const sb = createBrowserClient(envUrl, envKey);
 export type Tone = "info" | "success" | "error";
 export const toast = (m: string, tone: Tone = "info") =>
   typeof window !== "undefined" && window.dispatchEvent(new CustomEvent("khiyal:toast", { detail: { msg: m, tone } }));
