@@ -1,0 +1,7 @@
+{
+  "name": "khiyal",
+  "description": "مساحة عربية لصنّاع المحتوى لصياغة البرومبتات وتحسينها ومشاركتها",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
