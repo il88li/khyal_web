@@ -1,4 +1,4 @@
-// tailwind.config.ts — Luminous Minimalism · مقياس خيال البنفسجي
+// tailwind.config.ts — مقياس خيال — الألوان عبر متغيّرات CSS (app/globals.css ثم app/clean.css)
 import type { Config } from "tailwindcss";
 
 export default {

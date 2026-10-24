@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { clamp } from "@/lib/util";
 
 type Variant = 'linear' | 'flow' | 'conic';
 
@@ -38,7 +39,6 @@ const VARIANTS: Variant[] = ['linear', 'flow', 'conic'];
 const ANGLES: Record<string, number> = { horizontal: 90, vertical: 180, diagonal: 135 };
 const TAU = Math.PI * 2;
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export default function GradientText({
   children,

@@ -87,7 +87,7 @@ function AccountMenu({ compact }: { compact?: boolean }) {
   const { status, me, signOut } = useAuth();
   if (status === "loading") return <span className="skel h-8 w-8 !rounded-full" role="status" aria-label="جارٍ التحقق من الجلسة" />;
   if (status === "out")
-    return <Link href="/login" className="btn btn-primary btn-sm"><LogIn size={16} />{compact ? "دخول" : "تسجيل الدخول"}</Link>;
+    return <Link href="/auth" className="btn btn-primary btn-sm"><LogIn size={16} />{compact ? "دخول" : "تسجيل الدخول"}</Link>;
   const name = me?.display_name || me?.username || "حسابي";
   return (
     <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { status } = useAuth();
   const guarded = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));
-  useEffect(() => { if (guarded && status === "out") router.replace("/login"); }, [guarded, status, router]);
+  useEffect(() => { if (guarded && status === "out") router.replace("/auth"); }, [guarded, status, router]);
   const bare = isBare(path);
   const heading = PAGE_HEADINGS.find(([prefix]) => prefix === "/" ? path === "/" : path.startsWith(prefix));
   const hasRail = ["/", "/search", "/community", "/library"].some((route) => route === "/" ? path === "/" : path.startsWith(route));

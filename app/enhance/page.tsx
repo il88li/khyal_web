@@ -4,8 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Copy, RefreshCw, Bookmark, Send, Square, SlidersHorizontal, History } from "@/components/icons";
-import { ago, explain, sb, toast, wordDiff } from "@/lib/supabase";
-import { BottomSheet, Skeleton } from "@/components/ui";
+import { ago, copyText, explain, sb, toast, wordDiff } from "@/lib/supabase";
+import { BottomSheet, Chips, Skeleton } from "@/components/ui";
 
 const LANGS = ["عربي", "إنجليزي", "ثنائي"], TONES = ["رسمي", "ودّي", "تقني", "تسويقي", "أكاديمي"], DETAILS = ["موجز", "متوازن", "مفصّل"];
 const KEY = "khiyal:enhance";
@@ -18,13 +18,6 @@ function pushHistory(text: string, out: string) {
   try { localStorage.setItem(HK, JSON.stringify([{ id: crypto.randomUUID(), text, out, t: Date.now() }, ...readHist()].slice(0, 20))); } catch {}
 }
 
-function Chips({ items, value, onChange, wrap }: { items: string[]; value: string; onChange: (v: string) => void; wrap?: boolean }) {
-  return (
-    <div className={wrap ? "flex flex-wrap gap-2" : "-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]"}>
-      {items.map((i) => <button key={i} onClick={() => onChange(i)} className={`min-h-9 shrink-0 rounded-full border px-3.5 text-base font-semibold ${value === i ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>)}
-    </div>
-  );
-}
 
 function Enhancer() {
   const router = useRouter(), qs = useSearchParams();
@@ -39,6 +32,8 @@ function Enhancer() {
     if (!qs.get("text")) { try { const d = localStorage.getItem("khiyal:draft"); if (d) setText(d); } catch {} } // استعادة المسودة
     try { const p = JSON.parse(localStorage.getItem(KEY) || "{}"); p.lang && setLang(p.lang); p.tone && setTone(p.tone); p.detail && setDetail(p.detail); } catch {}
     sb.from("categories").select("id,name_ar").eq("active", true).order("sort").then(({ data }) => { if (data?.length) { setCats(data); setCat(data[0]); } });
+    // يعمل مرة واحدة عند الفتح فقط (استعادة المسودة والتفضيلات وجلب التصنيفات)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { try { const p = JSON.parse(localStorage.getItem(KEY) || "{}"); localStorage.setItem(KEY, JSON.stringify({ ...p, lang, tone, detail })); } catch {} }, [lang, tone, detail]);
   useEffect(() => { if (first.current) { first.current = false; return; } try { localStorage.setItem("khiyal:draft", text); } catch {} }, [text]); // حفظ المسودة تلقائياً
@@ -91,7 +86,7 @@ function Enhancer() {
     if (kind === "prompts") { (window as any).__feedDirty = true; router.push("/"); }
   }
   const diff = useMemo(() => (view === "diff" && out ? wordDiff(text, out) : null), [view, text, out]);
-  const copy = async () => { await navigator.clipboard.writeText(out); navigator.vibrate?.(10); toast("نُسخ البرومبت"); };
+  const copy = () => copyText(out);
   const showResult = (out || busy || err) && !editing;
   const act = "btn btn-ghost !min-h-10 flex-1 disabled:text-ash";
   const step = !text.trim() ? 1 : !out && !busy ? 2 : 3; // خيال: اختر ← خصّص ← أنشئ

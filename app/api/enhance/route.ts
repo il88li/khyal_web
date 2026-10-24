@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   if (!b?.text || String(b.text).length > 8000) return Response.json({ error: "bad_input" }, { status: 400 });
 
   try {
-    const { body, model } = await streamEnhance(
+    const { body } = await streamEnhance(
       buildMessages({
         text: b.text,
         category: b.category ?? "عام",
@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       undefined, // التوجيه التلقائي دائماً
       b.onlyFree !== false
     );
-    if (user) { try { svc().from("usage").insert({ user_id: user.id, model }).then(() => {}, () => {}); } catch {} }
     return new Response(scrub(body), {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
     });

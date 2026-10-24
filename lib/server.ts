@@ -37,12 +37,12 @@ const HASH_RE = /^[0-9a-f]{16,}:[0-9a-f]{64,}$/i;
 /** وضع التحقق: hash (ناتج scripts/hash-admin.mjs) أو text (كلمة المرور نفسها) أو none (غير مضبوطة) */
 export function passwordMode(): "hash" | "text" | "none" {
   const h = clean(process.env.ADMIN_PASSWORD_HASH), p = clean(process.env.ADMIN_PASSWORD);
-  return HASH_RE.test(h) ? "hash" : h || p ? "text" : "none";
+  return HASH_RE.test(h) ? "hash" : p ? "text" : "none";
 }
 export function checkPassword(pw: string) {
   const h = clean(process.env.ADMIN_PASSWORD_HASH), p = clean(process.env.ADMIN_PASSWORD), mode = passwordMode();
   if (mode === "hash") { const [salt, hash] = h.split(":"); return eq(scryptSync(pw.trim(), salt, 64).toString("hex"), hash.toLowerCase()); }
-  const expected = p || h; // نص صريح: مقبول للبداية، والأفضل لاحقاً استخدام hash
+  const expected = p; // نص صريح (للتجربة فقط): الأفضل ADMIN_PASSWORD_HASH من scripts/hash-admin.mjs
   if (!expected) return false;
   const k = (x: string) => createHmac("sha256", "khiyal-pw").update(x).digest("hex"); // يوحّد الأطوال قبل المقارنة
   return eq(k(pw.trim()), k(expected));

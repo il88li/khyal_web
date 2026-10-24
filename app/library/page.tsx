@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Copy, Send, Sparkles, Trash2, BookMarked, Search } from "@/components/icons";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
-import { sb, toast, uid, ago, explain } from "@/lib/supabase";
+import { sb, toast, uid, ago, explain, copyText } from "@/lib/supabase";
 
 type Item = { id: string; body: string; enhanced: string; model: string | null; category_id: number | null; created_at: string };
 
@@ -28,7 +28,7 @@ export default function Library() {
   const usedCats = useMemo(() => Array.from(new Set((items ?? []).map((i) => i.category_id).filter((x): x is number => x != null))), [items]);
   const list = useMemo(() => (items ?? []).filter((i) => (cat == null || i.category_id === cat) && (!q.trim() || (i.body + " " + i.enhanced).toLowerCase().includes(q.trim().toLowerCase()))), [items, cat, q]);
 
-  const copy = async (t: string) => { await navigator.clipboard.writeText(t); navigator.vibrate?.(10); toast("نُسخ البرومبت"); };
+  const copy = (t: string) => copyText(t);
   async function publish(i: Item) {
     const id = await uid(); if (!id) return;
     const { error } = await sb.from("prompts").insert({ author_id: id, body: i.body, enhanced: i.enhanced, category_id: i.category_id, model: i.model });

@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Check, ChevronRight, Bell, Share } from "@/components/icons";
 import { enablePush, explain, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
+import { Chips } from "@/components/ui";
 
 const LANGS = ["عربي", "إنجليزي", "ثنائي"], TONES = ["رسمي", "ودّي", "تقني", "تسويقي", "أكاديمي"];
 const input = "field px-4";
 const primary = "btn btn-primary w-full !min-h-10 disabled:bg-mist disabled:text-ash disabled:shadow-none";
 
-function Chips({ items, value, set }: { items: string[]; value: string; set: (v: string) => void }) {
-  return <div className="flex flex-wrap gap-2">{items.map((i) => <button key={i} onClick={() => set(i)} className={`min-h-9 shrink-0 rounded-full border px-3.5 text-base font-semibold ${value === i ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>)}</div>;
-}
 
 export default function Setup() {
   const r = useRouter(), file = useRef<HTMLInputElement>(null);
@@ -88,8 +86,8 @@ export default function Setup() {
           </>)}
 
           {step === 1 && (<>
-            <p className="text-caption text-smoke">لغة التحسين المفضّلة</p><Chips items={LANGS} value={lang} set={setLang} />
-            <p className="text-caption text-smoke">النبرة المفضّلة</p><Chips items={TONES} value={tone} set={setTone} />
+            <p className="text-caption text-smoke">لغة التحسين المفضّلة</p><Chips wrap items={LANGS} value={lang} onChange={setLang} />
+            <p className="text-caption text-smoke">النبرة المفضّلة</p><Chips wrap items={TONES} value={tone} onChange={setTone} />
             <button role="switch" aria-checked={hap} onClick={() => setHap(!hap)} className="flex min-h-11 items-center justify-between rounded-xl bg-mist px-4 text-sm"><span>الاهتزاز عند التفاعل</span>
               <span dir="ltr" className={`flex h-7 w-12 items-center rounded-full border px-0.5 ${hap ? "border-brand bg-brand" : "border-silver bg-mist"}`}><span className={`h-5 w-5 rounded-full bg-snow transition-transform ${hap ? "translate-x-5" : ""}`} /></span></button>
             <div className="mt-auto"><button onClick={saveCustom} className={primary}>التالي</button></div>

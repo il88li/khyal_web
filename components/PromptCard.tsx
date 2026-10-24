@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   Bookmark, Braces, Copy, GitFork, Heart, MessageCircle,
   Share2, Sparkles, UserPlus, Check } from "@/components/icons";
-import { ago, burst, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
+import { ago, burst, copyText, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
 import { BottomSheet, Comments, VarsSheet } from "./ui";
 import { VerifiedBadge } from "./badges";
 import { PromptCover } from "./PromptCover";
@@ -79,12 +79,13 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
     uid().then((id) => setMine(!!id && id === p.author?.id));
   }, [p.author?.id]);
 
+  const authorId = p.author?.id;
   useEffect(() => {
-    if (mine || !p.author?.id) { setFollowing(null); return; }
+    if (mine || !authorId) { setFollowing(null); return; }
     let dead = false;
-    getFollowed().then((set) => { if (!dead) setFollowing(set.has(p.author!.id)); });
+    getFollowed().then((set) => { if (!dead) setFollowing(set.has(authorId)); });
     return () => { dead = true; };
-  }, [mine, p.author?.id]);
+  }, [mine, authorId]);
 
   async function toggle(table: "likes" | "saves") {
     const id = await uid();
@@ -163,9 +164,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const vars = extractVars(shown);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(shown);
-    navigator.vibrate?.(10);
-    toast("نُسخ البرومبت");
+    await copyText(shown);
     if (p.id !== "preview") sb.rpc("bump_copy", { p_id: p.id }).then(() => {}, () => {});
   };
 

@@ -5,7 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 -H 0.0.0.0",
+    "setup:build": "node scripts/build-setup.mjs",
+    "prebuild": "node scripts/build-setup.mjs",
     "build": "next build",
+    "check": "node scripts/preflight.mjs",
     "start": "next start",
     "lint": "next lint"
   },

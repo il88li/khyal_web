@@ -141,12 +141,12 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
 .brand-mark { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .brand-mark img { object-fit: contain; }
 
-/* ── الهيدر: قرص عائم بنفس حجم شريط التنقل السفلي ── */
-.app-topbar { position: fixed !important; top: calc(10px + env(safe-area-inset-top)) !important; inset-inline: 10px !important;
-  width: min(calc(100% - 20px), 560px) !important; max-width: none !important; margin-inline: auto !important;
-  height: 64px !important; padding: 0 !important; border: 0 !important; border-bottom: 0 !important; border-radius: 26px !important; z-index: 50 !important;
-  background: rgb(var(--c-snow)) !important; box-shadow: var(--float) !important; overflow: visible !important; }
-.app-topbar-inner { display: flex !important; width: 100% !important; height: 64px !important; min-height: 64px !important; align-items: center; justify-content: space-between; gap: 6px; margin-inline: 0 !important; padding-inline: 16px !important; }
+/* ── الهيدر: شريط ثابت بالحافة العليا (غير عائم) ── */
+.app-topbar { position: fixed !important; top: 0 !important; inset-inline: 0 !important;
+  width: 100% !important; max-width: none !important; margin: 0 !important;
+  height: calc(64px + env(safe-area-inset-top)) !important; padding: env(safe-area-inset-top) 0 0 !important; border: 0 !important; border-radius: 0 !important; z-index: 50 !important;
+  background: rgb(var(--c-fog)) !important; box-shadow: none !important; overflow: visible !important; }
+.app-topbar-inner { display: flex !important; width: 100% !important; max-width: 1280px !important; height: 64px !important; min-height: 64px !important; align-items: center; justify-content: space-between; gap: 6px; margin-inline: auto !important; padding-inline: 16px !important; }
 
 /* ── التنقل السفلي: شريط عائم بحواف دائرية بدل الالتصاق بالحافة ── */
 .mobile-bottomnav { position: fixed !important; inset-inline: 10px !important; bottom: calc(10px + env(safe-area-inset-bottom)) !important;

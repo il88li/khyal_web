@@ -11,6 +11,13 @@ export const sb = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
 );
 export type Tone = "info" | "success" | "error";
+/** ينسخ نصاً للحافظة مع اهتزاز خفيف وإشعار (الواجهة الموحّدة لكل أزرار النسخ) */
+export async function copyText(text: string, msg = "نُسخ البرومبت") {
+  await navigator.clipboard.writeText(text);
+  navigator.vibrate?.(10);
+  toast(msg);
+}
+
 export const toast = (m: string, tone: Tone = "info") =>
   typeof window !== "undefined" && window.dispatchEvent(new CustomEvent("khiyal:toast", { detail: { msg: m, tone } }));
 export const uid = async () => (await sb.auth.getSession()).data.session?.user.id;
@@ -198,7 +205,7 @@ export async function withVerified<T extends { id: string }>(rows: T[]): Promise
   const ids = Array.from(new Set(rows.map((r: any) => r.author?.id).filter(Boolean))) as string[];
   if (!ids.length) return rows;
   try {
-    let res = await sb.from("profiles").select("id,verified,verification_tier").in("id", ids);
+    let res: any = await sb.from("profiles").select("id,verified,verification_tier").in("id", ids);
     if (res.error) {
       res = await sb.from("profiles").select("id,verified").in("id", ids);
     }
