@@ -22,3 +22,8 @@
 - الحركة: spring أو ease-out، لا خطّي.
 - الحد الأقصى: خط 32px، حشوة 24px، نصف قطر 28px.
 - لا تغيير للون الأساسي من الإعدادات.
+
+## توكنز iOS (المرحلة 1 — إضافية)
+- أسماؤها `ios-*` فقط في `tailwind.config.ts`: نصف القطر `rounded-ios-{sm,md,lg,xl,pill}`، الظلال `shadow-ios-{card,sheet,bar,pressed}`، المسافات `p-ios-{1..16}` (4…64px)، التوقيت `ease-ios` / `ease-ios-out` و`duration-ios-{1..4}`، `min-h-touch`/`min-w-touch` (44px)، `backdrop-blur-ios-{bar,sheet}`.
+- متغيرات CSS في `app/globals.css`: `--ease-ios`, `--ease-ios-out`, `--dur-1..4`, `--safe-top`, `--safe-bottom`.
+- ظلال `ios-*` هي ظلال ارتفاع للعناصر العائمة فقط (شريط، ورقة، بطاقة عائمة) ولا تُستخدم زخرفة.

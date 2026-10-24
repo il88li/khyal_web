@@ -70,7 +70,7 @@ if (/setUsed\(|used\?\.replace/.test(page)) bad("enhance page", "ما يزال �
 
 console.log("\n[5] الهيدر الثابت والشريط العائم");
 const clean = read("app/clean.css");
-if (!/\.app-topbar \{[^}]*position: fixed !important; top: 0 !important/.test(clean)) bad("clean.css", "الهيدر ليس ثابتاً بالحافة"); else ok("الهيدر شريط ثابت بالحافة العليا");
+if (!/\.app-topbar \{[^}]*position: fixed !important; top: calc\(10px \+ env\(safe-area-inset-top\)\) !important/.test(clean)) bad("clean.css", "الهيدر ليس قرصاً عائماً"); else ok("الهيدر قرص عائم مرن العرض");
 if (!/\.mobile-bottomnav \{[^}]*bottom: calc\(10px/.test(clean)) bad("clean.css", "الشريط السفلي ليس عائماً"); else ok("الشريط السفلي عائم بحواف دائرية");
 const chrome = read("components/chrome.tsx");
 if (!/MoreSheet open=\{more\}/.test(chrome.split("export function BottomNav")[0])) bad("chrome.tsx", "قائمة المزيد ليست في الهيدر"); else ok("قائمة «المزيد» في الهيدر");

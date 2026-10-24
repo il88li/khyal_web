@@ -39,6 +39,8 @@ export function NetworkSheet({
   const [followers, setFollowers] = useState<UserItem[]>([]);
   const [following, setFollowing] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [tick, setTick] = useState(0);
   const [query, setQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [myFollowingIds, setMyFollowingIds] = useState<Set<string>>(new Set());
@@ -70,40 +72,31 @@ export function NetworkSheet({
     if (!open || !targetUserId) return;
     let cancelled = false;
 
+    // يُجرَّب الاستعلام الكامل ثم نسخة بأعمدة أساسية إن فشل (عمود غير متاح)، وأي فشل نهائي يظهر للمستخدم مع إعادة محاولة
+    const COLS = "id,username,display_name,avatar_url,bio,verified,verification_tier";
+    const COLS_SAFE = "id,username,display_name,avatar_url,bio,verified";
+    const side = (rel: "follower" | "following", cols: string) =>
+      sb
+        .from("follows")
+        .select(`${rel}:profiles!${rel}_id(${cols})`)
+        .eq(rel === "follower" ? "following_id" : "follower_id", targetUserId)
+        .eq("status", "accepted")
+        .limit(150);
+
     async function loadData() {
       setLoading(true);
+      setFailed(false);
       try {
-        const [fResp, gResp] = await Promise.all([
-          // المتابعون (من يتابع هذا الحساب)
-          sb
-            .from("follows")
-            .select("follower:profiles!follower_id(id,username,display_name,avatar_url,bio,verified,verification_tier)")
-            .eq("following_id", targetUserId)
-            .eq("status", "accepted")
-            .limit(150),
-          // يتابعهم (من يتابعهم هذا الحساب)
-          sb
-            .from("follows")
-            .select("following:profiles!following_id(id,username,display_name,avatar_url,bio,verified,verification_tier)")
-            .eq("follower_id", targetUserId)
-            .eq("status", "accepted")
-            .limit(150),
-        ]);
-
+        let [fResp, gResp]: any[] = await Promise.all([side("follower", COLS), side("following", COLS)]);
+        if (fResp.error || gResp.error) [fResp, gResp] = await Promise.all([side("follower", COLS_SAFE), side("following", COLS_SAFE)]);
         if (cancelled) return;
+        if (fResp.error || gResp.error) throw fResp.error ?? gResp.error;
 
-        const fList: UserItem[] = (fResp.data ?? [])
-          .map((r: any) => r.follower)
-          .filter(Boolean);
-
-        const gList: UserItem[] = (gResp.data ?? [])
-          .map((r: any) => r.following)
-          .filter(Boolean);
-
-        setFollowers(fList);
-        setFollowing(gList);
+        setFollowers((fResp.data ?? []).map((r: any) => r.follower).filter(Boolean));
+        setFollowing((gResp.data ?? []).map((r: any) => r.following).filter(Boolean));
       } catch (e) {
         console.error("[NetworkSheet]", e);
+        if (!cancelled) setFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -113,7 +106,7 @@ export function NetworkSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, targetUserId]);
+  }, [open, targetUserId, tick]);
 
   // التبديل بين المتابعة وإلغاء المتابعة
   async function toggleFollow(user: UserItem, e: React.MouseEvent) {
@@ -264,6 +257,11 @@ export function NetworkSheet({
                   <div className="h-8 w-16 rounded-full bg-mist shrink-0" />
                 </div>
               ))}
+            </div>
+          ) : failed ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-graphite">
+              <p className="font-semibold text-charcoal">تعذّر تحميل القائمة</p>
+              <button type="button" onClick={() => setTick((t: number) => t + 1)} className="btn btn-primary">إعادة المحاولة</button>
             </div>
           ) : !filteredList.length ? (
             <div className="flex flex-col items-center justify-center py-12 text-center text-graphite gap-2">

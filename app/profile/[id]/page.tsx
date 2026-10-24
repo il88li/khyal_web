@@ -6,8 +6,8 @@ import type { PromptRow } from "@/types";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Award, BarChart3, BookMarked, Camera, FileText, Flame, Heart, Lock, Pencil, Settings, Share2, Trash2, UserPlus, Users } from "@/components/icons";
-import { VERSION, ago, explain, purgeImageFolder, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
+import { Award, BarChart3, BookMarked, Camera, Copy, FileText, Flame, Heart, Lock, Pencil, Settings, Share2, Trash2, UserPlus, Users } from "@/components/icons";
+import { VERSION, ago, explain, fmt, purgeImageFolder, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
 import { BottomSheet } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
@@ -19,10 +19,22 @@ type Prof = { id: string; username: string | null; display_name: string | null; 
 type Cell = { id: string; body: string; enhanced: string | null; images: { url: string }[]; like_count?: number };
 const SEL = "id,body,enhanced,images,like_count,comment_count,category_id,created_at,author_id";
 
+/** بطاقة إحصاء صغيرة موحّدة (برومبتات/نسخ/متابعون/يتابعهم) — زر عند وجود onClick */
+function PStat({ icon, tone, value, label, onClick, title }: { icon: React.ReactNode; tone: string; value: number; label: string; onClick?: () => void; title?: string }) {
+  const body = (<>
+    <span className={`pstat-i ${tone}`}>{icon}</span>
+    <span className="pstat-v">{fmt(value)}</span>
+    <span className="pstat-l">{label}</span>
+  </>);
+  return onClick
+    ? <button type="button" onClick={onClick} title={title} aria-label={`${label}: ${value}`} className="pstat">{body}</button>
+    : <div className="pstat" aria-label={`${label}: ${value}`}>{body}</div>;
+}
+
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const [me, setMe] = useState<string | undefined>(), [p, setP] = useState<Prof | null>(null), [cells, setCells] = useState<Cell[]>([]), [saved, setSaved] = useState<Cell[]>([]);
-  const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [likes, setLikes] = useState(0), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
+  const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [likes, setLikes] = useState(0), [copies, setCopies] = useState(0), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
   const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null), [verified, setVerified] = useState(false), [vTier, setVTier] = useState<number>(1);
   const [netOpen, setNetOpen] = useState(false), [netTab, setNetTab] = useState<"followers" | "following">("followers");
   async function change(kind: "cover_url" | "avatar_url", f?: File) {
@@ -81,7 +93,7 @@ export default function Profile() {
       count("follows", "follower_id"),
       count("prompts", "author_id"),
       sb.from("prompts").select(SEL).eq("author_id", pid).order("created_at", { ascending: false }).limit(60),
-      sb.from("prompts").select("like_count").eq("author_id", pid),
+      sb.from("prompts").select("like_count,copy_count").eq("author_id", pid),
       me ? sb.from("follows").select("status").match({ follower_id: me, following_id: pid }).maybeSingle() : Promise.resolve({ data: null })
     ]).then(([pr, a, b, c, ps, lk, f]: any) => {
       if (pr.data) {
@@ -95,6 +107,7 @@ export default function Profile() {
       }
       setStats({ followers: a.count ?? 0, following: b.count ?? 0, prompts: c.count ?? 0 });
       setLikes((lk.data ?? []).reduce((s: number, x: any) => s + (x.like_count ?? 0), 0));
+      setCopies((lk.data ?? []).reduce((s: number, x: any) => s + (x.copy_count ?? 0), 0));
       setCells(ps.data ?? []);
       setFol(f.data?.status === "accepted");
       setPend(f.data?.status === "pending");
@@ -200,6 +213,7 @@ export default function Profile() {
     if (c.author_id && c.author_id !== p?.id) row.author = { id: c.author_id, username: null, display_name: null, avatar_url: null };
     setPv(row); withMeta([row]).then(([r]) => setPv({ ...r }));
   };
+  const openNet = (t: "followers" | "following") => { navigator.vibrate?.(8); setNetTab(t); setNetOpen(true); };
   if (err) return <ErrorState onRetry={() => { setErr(false); setReady(false); setTick((t) => t + 1); }} />;
   if (ready && !p) return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
@@ -209,9 +223,9 @@ export default function Profile() {
   );
   const hidden = !!p?.is_private && !own && !fol, list = tab === "saved" ? saved : cells;
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col overflow-x-hidden">
+    <main className="mx-auto flex w-full max-w-xl flex-col overflow-x-hidden">
       {/*1 — الغلاف بعرض العمود */}
-      <div className="cover-fallback relative h-40 w-full overflow-hidden rounded-xl">
+      <div className="cover-fallback relative mx-auto h-[clamp(128px,34vw,176px)] w-[calc(100%-16px)] overflow-hidden rounded-3xl shadow-ios-card">
         {p?.cover_url && <img src={p.cover_url} alt="" className="h-full w-full object-cover" />}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         {own && <>
@@ -224,11 +238,15 @@ export default function Profile() {
       </div>
 
       {/*2 — الأفاتار المركزي فوق الغلاف */}
-      <div className="relative -mt-11 flex justify-center">
-        <div className="relative h-[88px] w-[88px]">
-          <div className="avatar h-full w-full border-[4px] border-snow bg-brand-tint text-2xl text-brand-ink shadow-soft" data-i={(p?.display_name ?? "؟").slice(0, 1)}>{p?.avatar_url && <img src={p.avatar_url} alt="" />}</div>
+      <div className="profile-hero">
+        <PStat icon={<FileText size={15} />} tone="bg-brand-tint text-brand-ink" value={stats.prompts} label="برومبت" />
+        <PStat icon={<Copy size={15} />} tone="bg-info-tint text-info-ink" value={copies} label="نسخ" />
+        <div className="profile-hero-avatar relative">
+          <div className="avatar h-full w-full border-[4px] border-snow bg-brand-tint text-2xl text-brand-ink shadow-ios-card" data-i={(p?.display_name ?? "؟").slice(0, 1)}>{p?.avatar_url && <img src={p.avatar_url} alt="" />}</div>
           {own && <label className="absolute bottom-0 end-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-snow bg-brand text-snow shadow-pop active:scale-95">{up === "avatar_url" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-snow/40 border-t-snow" /> : <Camera size={17} />}<input type="file" accept="image/*" hidden onChange={(e) => change("avatar_url", e.target.files?.[0])} /></label>}
         </div>
+        <PStat icon={<Users size={15} />} tone="bg-ok-tint text-ok-ink" value={stats.followers} label="المتابعون" onClick={() => openNet("followers")} title="عرض قائمة المتابعين" />
+        <PStat icon={<UserPlus size={15} />} tone="bg-gold-tint text-gold-ink" value={stats.following} label="يتابعهم" onClick={() => openNet("following")} title="عرض الحسابات التي يتابعها" />
       </div>
 
       {/*3 — الهوية موسّطة: اسم + @username + شارات */}
@@ -261,51 +279,6 @@ export default function Profile() {
           className="mx-4 mt-4"
         />
       )}
-
-      {/*5 — الإحصاءات: ثلاثة أعمدة تفاعلية مع واجهة المتابعين والمتابعون */}
-      <dl className="grid w-full grid-cols-3 gap-3 px-4 pt-4">
-        <div className="stat-tile">
-          <span className="stat-icon bg-brand-tint text-brand-ink"><FileText size={20} /></span>
-          <dt className="stat-value">{stats.prompts}</dt>
-          <dd className="stat-label">برومبت</dd>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(8);
-            setNetTab("followers");
-            setNetOpen(true);
-          }}
-          className="stat-tile group transition-all duration-200 hover:border-brand/40 active:scale-95 cursor-pointer relative text-center"
-          title="عرض قائمة المتابعين"
-        >
-          <span className="stat-icon bg-ok-tint text-ok-ink group-hover:scale-110 transition-transform"><Users size={20} /></span>
-          <dt className="stat-value">{stats.followers}</dt>
-          <dd className="stat-label flex items-center justify-center gap-1 text-charcoal font-semibold">
-            <span>المتابعون</span>
-            <span className="text-[11px] text-brand">←</span>
-          </dd>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(8);
-            setNetTab("following");
-            setNetOpen(true);
-          }}
-          className="stat-tile group transition-all duration-200 hover:border-brand/40 active:scale-95 cursor-pointer relative text-center"
-          title="عرض الحسابات التي يتابعها"
-        >
-          <span className="stat-icon bg-gold-tint text-gold-ink group-hover:scale-110 transition-transform"><UserPlus size={20} /></span>
-          <dt className="stat-value">{stats.following}</dt>
-          <dd className="stat-label flex items-center justify-center gap-1 text-charcoal font-semibold">
-            <span>يتابعهم</span>
-            <span className="text-[11px] text-brand">←</span>
-          </dd>
-        </button>
-      </dl>
 
       {/*6 — الإجراءات: أساسي موسّط + ثانويتان */}
       <div className="flex flex-wrap justify-center gap-2 px-4 pt-4">

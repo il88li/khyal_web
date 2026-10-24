@@ -1427,3 +1427,29 @@ html.dark .prompt-cover-badge { background: rgb(255 255 255 / .1); }
   .prompt-card-footer { padding-inline: 12px; }
   .prompt-cover { padding: 14px; min-height: 136px; }
 }
+
+/* ==================================================================
+   توكنز iOS — المرحلة 1 (إضافية فقط: لا تغيّر أي مكوّن قائم)
+   ================================================================== */
+:root {
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ios-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 150ms; --dur-2: 250ms; --dur-3: 350ms; --dur-4: 500ms;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+/* لمس سريع بلا تأخير النقر المزدوج ولا وميض التظليل */
+a, button, [role="button"], input, select, textarea, label, summary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* تخفيف الحركة: كل الانتقالات والحركات CSS تصبح فورية */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+

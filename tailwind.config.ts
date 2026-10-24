@@ -74,7 +74,30 @@ export default {
       fontFamily: {
         sans: ["var(--font-sans)", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
       },
-      transitionTimingFunction: { out: "cubic-bezier(.2,.8,.3,1)" },
+      transitionTimingFunction: {
+        out: "cubic-bezier(.2,.8,.3,1)",
+        ios: "cubic-bezier(0.32,0.72,0,1)",
+        "ios-out": "cubic-bezier(0.16,1,0.3,1)",
+      },
+      transitionDuration: { "ios-1": "150ms", "ios-2": "250ms", "ios-3": "350ms", "ios-4": "500ms" },
+
+      // ── توكنز iOS (المرحلة 1): إضافية فقط وبأسماء ios-* كي لا تُغيّر أي صنف قائم ──
+      borderRadius: { "ios-sm": "10px", "ios-md": "14px", "ios-lg": "20px", "ios-xl": "28px", "ios-pill": "999px" },
+      // ظلال ارتفاع ناعمة (طفو) — لا زخرفة؛ انسجاماً مع design.md تُستخدم للعناصر العائمة فقط
+      boxShadow: {
+        "ios-card": "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)",
+        "ios-sheet": "0 -8px 32px rgba(0,0,0,0.12)",
+        "ios-bar": "0 1px 0 rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06)",
+        "ios-pressed": "inset 0 1px 2px rgba(0,0,0,0.08)",
+      },
+      // مقياس مسافات ios-N (لا نستبدل 4/8/12… الافتراضية لأن p-4 الحالية = 16px ولا يجوز كسرها)
+      spacing: {
+        "ios-1": "4px", "ios-2": "8px", "ios-3": "12px", "ios-4": "16px", "ios-5": "20px",
+        "ios-6": "24px", "ios-8": "32px", "ios-10": "40px", "ios-12": "48px", "ios-16": "64px",
+      },
+      minHeight: { touch: "44px" },
+      minWidth: { touch: "44px" },
+      backdropBlur: { "ios-bar": "20px", "ios-sheet": "28px" },
     },
   },
 } satisfies Config;
