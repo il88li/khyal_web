@@ -1,4 +1,3 @@
-import { clamp } from "@/lib/util";
 'use client';
 
 import {
@@ -10,6 +9,7 @@ import {
   type MouseEvent,
   type ReactNode
 } from 'react';
+import { clamp } from "@/lib/util";
 
 type Axis = 'both' | 'horizontal' | 'vertical';
 
