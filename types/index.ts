@@ -1,10 +1,63 @@
 // types/index.ts — أنواع مشتركة
 export type Img = { url: string; w: number; h: number };
-export type Author = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; verified?: boolean; card_fx?: unknown };
+export type VerificationTier = 1 | 2 | 3;
+
+export type Author = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  verified?: boolean;
+  verification_tier?: VerificationTier | number | null;
+  card_fx?: unknown;
+};
+
+export type TierRequirement = {
+  key: string;
+  label: string;
+  current: number;
+  goal: number;
+  unit?: string;
+  done: boolean;
+  hint: string;
+};
+
+export type TierDefinition = {
+  tier: VerificationTier;
+  id: "creator" | "pro" | "elite";
+  name: string;
+  badgeTitle: string;
+  subtitle: string;
+  description: string;
+  badgeType: "shield" | "star" | "diamond";
+  accentColor: string;
+  themeClass: string;
+  requirements: TierRequirement[];
+  perks: string[];
+  eligible: boolean;
+  attained: boolean;
+  progressPct: number;
+};
+
 export type VerificationStats = {
-  ok: boolean; reason?: string; verified: boolean; status: string | null;
-  prompts: number; min_prompts: number; likes: number; min_likes: number;
-  followers: number; min_followers: number; days: number; min_days: number; eligible: boolean;
+  ok: boolean;
+  reason?: string;
+  verified: boolean;
+  currentTier: 0 | 1 | 2 | 3;
+  status: string | null;
+  prompts: number;
+  likes: number;
+  followers: number;
+  days: number;
+  comments: number;
+  copies: number;
+  profileComplete: boolean;
+  hasAvatar: boolean;
+  hasBio: boolean;
+  hasLinks: boolean;
+  tiers: TierDefinition[];
+  eligible: boolean;
+  nextTier: VerificationTier | null;
 };
 export type PromptRow = {
   id: string; body: string; enhanced: string | null; model: string | null; images: Img[];

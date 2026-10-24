@@ -12,6 +12,7 @@ import { hasCardFx } from "@/lib/cardFx";
 import CreatorCardSlot from "@/components/CreatorCardSlot";
 import Link from "next/link";
 import type { PromptRow } from "@/types";
+import { Skeleton } from "@/components/states";
 
 /* بطاقة المبدع في الخلاصة: مرة واحدة لكل كاتب في الجلسة */
 const feedCards = new Set<string>();
@@ -133,27 +134,6 @@ async function gateRows(list: PromptRow[]) {
   await withMeta(list); // احتياطي: عنوان/وسوم فقط
 }
 
-const Skeleton = () => (
-  <div className="card prompt-card prompt-card-skel" aria-hidden>
-    <div className="prompt-card-head">
-      <div className="skel h-10 w-10 shrink-0 rounded-full" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="skel h-3.5 w-28 rounded-full" />
-        <div className="skel h-3 w-16 rounded-full" />
-      </div>
-      <div className="skel h-8 w-20 shrink-0 rounded-full" />
-    </div>
-    <div className="prompt-card-media skel" />
-    <div className="prompt-card-copy-wrap flex flex-col gap-2">
-      <div className="skel h-3.5 w-full rounded-full" />
-      <div className="skel h-3.5 w-3/4 rounded-full" />
-    </div>
-    <div className="prompt-card-footer">
-      <div className="skel h-6 w-32 rounded-full" />
-      <div className="skel h-9 w-full rounded-full" />
-    </div>
-  </div>
-);
 
 export default function Feed() {
   const router = useRouter();
@@ -355,7 +335,7 @@ export default function Feed() {
             {(i + 1) % 12 === 0 && <div className="xl:hidden"><AdSlot slot="feed" /></div>}
           </Fragment>
         ))}
-        {loading && Array.from({ length: items.length ? 1 : 3 }).map((_, i) => <Skeleton key={i} />)}
+        {loading && <Skeleton variant="promptCard" count={items.length ? 1 : 3} />}
 
         {!loading && err && (
           <div className="flex flex-col items-center gap-4 py-16 text-center">

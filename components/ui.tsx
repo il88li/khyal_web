@@ -746,3 +746,16 @@ export function VarsSheet({
     </BottomSheet>
   );
 }
+
+/* ============================================================================
+   Chips — شرائح اختيار مفرد (اللغة، النبرة، التفصيل، التصنيف)
+   ========================================================================== */
+export function Chips({ items, value, onChange, wrap }: { items: string[]; value: string; onChange: (v: string) => void; wrap?: boolean }) {
+  return (
+    <div className={wrap ? "flex flex-wrap gap-2" : "-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]"}>
+      {items.map((i) => (
+        <button key={i} onClick={() => onChange(i)} className={`min-h-9 shrink-0 rounded-full border px-3.5 text-base font-semibold ${value === i ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>
+      ))}
+    </div>
+  );
+}

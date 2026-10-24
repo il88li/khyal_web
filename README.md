@@ -1,9 +1,7 @@
 # خيال (Khiyal)
 
 منصة عربية لتحسين البرومبتات ومشاركتها: Next.js 14 + TypeScript + Tailwind + Supabase + OpenRouter (توجيه تلقائي للنماذج المجانية) + PWA/FCM.
-واجهة عربية RTL بنظام **Luminous Minimalism** (بنفسجي #6750A4، أسطح بيضاء بتمويه وظلال هادئة)، وتخطيط ويب ثلاثي الأعمدة: Sidebar على اليمين، محتوى في الوسط، وتحدي اليوم على اليسار. على الهاتف يتحول إلى رأس علوي وشريط سفلي ثابت.
-
-> الفحص: اجتاز TypeScript وبناء Next.js للإنتاج؛ تمت مراجعة نقاط العرض المكتبية والهاتفية (390×844) في Chromium. لم يجرِ اختبار على جهاز مادي. مواصفات الهوية في `DESIGN_SYSTEM.md` وسجل التنفيذ في `plan.md`.
+واجهة عربية RTL بهوية الفرشاة الحمراء (`#CC1728`، ثابتة لا يغيّرها المستخدم)، أسطح مسطحة بلا حدود ولا ظلال زخرفية، وتخطيط ويب ثلاثي الأعمدة: Sidebar على اليمين، محتوى في الوسط، ولوحة جانبية على اليسار؛ وعلى الهاتف رأس علوي وشريط سفلي. مواصفات الهوية في `design.md`، وتعليمات العمل على المشروع (للمطوّر أو الـ AI agent) في `AGENTS.md`.
 
 ## الجمهور المستهدف والأولويات
 **الأساسي:** صنّاع المحتوى العرب، المسوّقون، المستقلون وأصحاب المتاجر، والمبتدئون في الذكاء الاصطناعي. **الثانوي:** المطورون، المعلمون والطلاب، الوكالات، ومنشئو البرومبتات.
@@ -26,8 +24,9 @@
 |---|---|
 | `lib/supabase.ts` | **عميل**: عميل Supabase، رفع الصور وضغطها، FCM، فرق النصوص، `explain` للأخطاء، `burst` (احتفال)، `useCategories` |
 | `lib/server.ts` | **خادم فقط**: الأدمن (جلسة/CSRF/audit)، OpenRouter، الإشعارات، التهيئة الذاتية للقاعدة |
-| `lib/setup-sql.ts` | مُولَّد من `supabase/setup.src.sql` عبر `python3 scripts/build-setup.py` |
-| `components/ui.tsx` | BottomSheet, Toaster, CopyButton, Lightbox, Gallery, Comments, Splash, DailyCard |
+| `lib/setup-sql.ts` · `supabase/setup.sql` | مُولَّدان من `supabase/setup.src.sql` (المصدر الوحيد للمخطط) عبر `npm run setup:build`؛ يعمل تلقائياً قبل كل `npm run build` |
+| `lib/util.ts` | دوال مساعدة مشتركة صغيرة (`clamp`…) |
+| `components/ui.tsx` | BottomSheet, Toaster, CopyButton, Lightbox, Gallery, Comments, Chips, Splash, DailyCard |
 | `components/chrome.tsx` | TopBar, BottomNav, Sidebar, Shell, Providers, PwaBoot |
 | `components/PromptCard.tsx` | بطاقة البرومبت |
 | `app/*` | الصفحات: الرئيسية، `/enhance`، `/new`، `/library`، `/search`، `/profile/[id]`، `/settings`، `/notifications`، `/requests`، `/welcome`، `/auth`، `/setup`، `/admin`، `/p/[id]` + مسارات `api/*` |
@@ -52,6 +51,9 @@ npm run dev
 
 **بدون `SUPABASE_DB_URL`** (يدوي): `/admin` ← الفحص ← «نسخ الجزء 1…6» والصق كل جزء بالترتيب في SQL Editor ← Run (اللصق الأطول من ~20 ألف حرف يُقصّ على الهاتف). بعد كل جزء تظهر نتيجة: «بلا أخطاء» أو قائمة الأوامر الفاشلة.
 **جداول من نسخة سابقة**: التهيئة تضيف الأعمدة الناقصة والمفاتيح الأجنبية وتحذف السياسات القديمة. وإن بقيت المشكلة: `/admin` ← الفحص ← «إعادة بناء الجداول» (يحذف بيانات جداول التطبيق فقط).
+
+## الدفع (خيال برو)
+`/api/plan` يعيد رابط الدفع من `PAYMENT_CHECKOUT_URL` (مع `ref=<معرّف المستخدم>`)، وبعد الدفع يستدعي مزوّد الدفع `POST /api/payment/webhook` بترويسة `x-webhook-secret: $PAYMENT_WEBHOOK_SECRET` وجسم `{ "ref": "<uuid>", "status": "active" | "canceled" | "expired" }` فتتحدّث الخطة (pro/free). تعديل `plan` و`verified` و`verification_tier` من المتصفح ممنوع بمشغّل في القاعدة؛ الخادم والأدمن فقط.
 
 ## تحديث قاعدة بيانات قائمة بدل التهيئة الكاملة
 إن ظهرت «ينقص: أعمدة profiles، دالة touch_streak» ولم تضبط `SUPABASE_DB_URL`، الصق هذا الملخّص (قصير) في SQL Editor ← Run ثم «إعادة المحاولة»:

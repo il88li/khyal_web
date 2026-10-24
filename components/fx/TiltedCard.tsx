@@ -9,6 +9,7 @@ import {
   type MouseEvent,
   type ReactNode
 } from 'react';
+import { clamp } from "@/lib/util";
 
 type Axis = 'both' | 'horizontal' | 'vertical';
 
@@ -97,7 +98,6 @@ const EDGE_STYLE: CSSProperties = {
   mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)'
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const parseColor = (value: string): number[] | null => {
   const text = String(value || '').trim();

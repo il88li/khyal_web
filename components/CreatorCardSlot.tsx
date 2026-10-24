@@ -39,7 +39,7 @@ export default function CreatorCardSlot({ profileId, profile, compact = false, f
       }
     });
     return () => { dead = true; };
-  }, [profileId, compact]);
+  }, [profileId, compact, fxRaw]);
 
   if (!fx) return null;
   return <CreatorCard fx={fx} profile={profile} items={items} compact={compact} className={className} />;

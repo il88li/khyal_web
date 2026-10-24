@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { clamp } from "@/lib/util";
 
 export type NoiseBlendMode = 'normal' | 'overlay' | 'soft-light' | 'multiply' | 'screen' | 'difference';
 
@@ -32,7 +33,6 @@ const TILE = 256;
 const TAU = Math.PI * 2;
 const BLENDS: NoiseBlendMode[] = ['normal', 'overlay', 'soft-light', 'multiply', 'screen', 'difference'];
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const generator = (seed: number) => {
   let state = seed >>> 0 || 1;

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   Bookmark, Braces, Copy, GitFork, Heart, MessageCircle,
   Share2, Sparkles, UserPlus, Check } from "@/components/icons";
-import { ago, burst, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
+import { ago, burst, copyText, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
 import { BottomSheet, Comments, VarsSheet } from "./ui";
 import { VerifiedBadge } from "./badges";
 import { PromptCover } from "./PromptCover";
@@ -79,12 +79,13 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
     uid().then((id) => setMine(!!id && id === p.author?.id));
   }, [p.author?.id]);
 
+  const authorId = p.author?.id;
   useEffect(() => {
-    if (mine || !p.author?.id) { setFollowing(null); return; }
+    if (mine || !authorId) { setFollowing(null); return; }
     let dead = false;
-    getFollowed().then((set) => { if (!dead) setFollowing(set.has(p.author!.id)); });
+    getFollowed().then((set) => { if (!dead) setFollowing(set.has(authorId)); });
     return () => { dead = true; };
-  }, [mine, p.author?.id]);
+  }, [mine, authorId]);
 
   async function toggle(table: "likes" | "saves") {
     const id = await uid();
@@ -163,9 +164,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const vars = extractVars(shown);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(shown);
-    navigator.vibrate?.(10);
-    toast("نُسخ البرومبت");
+    await copyText(shown);
     if (p.id !== "preview") sb.rpc("bump_copy", { p_id: p.id }).then(() => {}, () => {});
   };
 
@@ -213,7 +212,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
             <Link href={`/profile/${p.author?.id}`} className="truncate text-sm font-semibold text-charcoal">{name}</Link>
-            {p.author?.verified && <VerifiedBadge />}
+            {p.author?.verified && <VerifiedBadge tier={p.author.verification_tier ?? 1} />}
             {p.author?.username && <span dir="ltr" className="truncate text-caption text-smoke">@{p.author.username}</span>}
           </div>
           <p className="text-caption text-smoke">{ago(p.created_at)}</p>

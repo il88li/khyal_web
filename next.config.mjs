@@ -2,8 +2,6 @@
 
 // رؤوس الأمان — مُطبّقة على كل الصفحات
 const SECURITY_HEADERS = [
-  // منع تضمين الموقع في iframe (Clickjacking)
-  { key: "X-Frame-Options", value: "DENY" },
   // منع تخمين نوع الملف (MIME sniffing)
   { key: "X-Content-Type-Options", value: "nosniff" },
   // سياسة المُحيل — لا تُسرّب روابط داخلية
@@ -38,8 +36,8 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // الخطوط
   "font-src 'self' data: https://fonts.gstatic.com",
-  // منع التضمين في iframe
-  "frame-ancestors 'none'",
+  // السماح بالتضمين داخل إطار العمل والتطبيق
+  "frame-ancestors *",
   // خدمة العمال (Service Worker + FCM)
   "worker-src 'self' blob:",
   // منع تحويل النماذج لجهات خارجية
@@ -49,6 +47,7 @@ const CSP = [
 ].join("; ");
 
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
 
   // pg يحتاج أن يبقى خارج حزمة Edge (يستخدم في التهيئة الذاتية)

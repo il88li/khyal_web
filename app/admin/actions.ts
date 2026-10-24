@@ -72,9 +72,10 @@ export async function verifications(c: string) {
 /** التوثيق: قبول/رفض طلب + تحديث شارة الحساب + إشعار المستخدم */
 export async function verifyUser(c: string, userId: string, approve: boolean, note?: string) {
   const a = await requireAdmin(c), s = svc();
-  const { data: req } = await s.from("verification_requests").select("id").eq("user_id", userId).eq("status", "pending").order("created_at", { ascending: false }).maybeSingle();
+  const { data: req } = await s.from("verification_requests").select("id,kind").eq("user_id", userId).eq("status", "pending").order("created_at", { ascending: false }).maybeSingle();
+  const tier = Math.min(3, Math.max(1, Number(String((req as any)?.kind ?? "").replace("tier_", "")) || 1));
   if (req) await s.from("verification_requests").update({ status: approve ? "approved" : "rejected", review_note: (note ?? "").slice(0, 500), reviewed_at: new Date().toISOString() }).eq("id", req.id);
-  await s.from("profiles").update(approve ? { verified: true, verified_at: new Date().toISOString() } : { verified: false, verified_at: null }).eq("id", userId);
+  await s.from("profiles").update(approve ? { verified: true, verification_tier: tier, verified_at: new Date().toISOString() } : { verified: false, verification_tier: 0, verified_at: null }).eq("id", userId);
   await s.from("notifications").insert({ user_id: userId, title: approve ? "تم توثيق حسابك" : "نتيجة طلب التوثيق", body: approve ? "أصبح حسابك موثّقاً — تظهر الشارة بجانب اسمك." : ((note ?? "").trim() || "لم يُقبل طلب التوثيق حالياً."), link: approve ? `/profile/${userId}` : "/verification" });
   await audit(a, approve ? "verify.approve" : "verify.reject", userId, { note });
   return true;

@@ -54,7 +54,6 @@ create table if not exists blocks (
 
 create table if not exists audit_log (id bigserial primary key, actor uuid, action text, target text, meta jsonb, created_at timestamptz default now());
 create table if not exists error_log (id bigserial primary key, source text, message text, created_at timestamptz default now());
-create table if not exists usage (id bigserial primary key, user_id uuid, model text, created_at timestamptz default now());
 create table if not exists settings (key text primary key, value jsonb not null);
 create table if not exists rate_hits (user_id uuid not null, ts timestamptz not null default now());
 
@@ -132,9 +131,6 @@ alter table audit_log add column if not exists created_at timestamptz default no
 alter table error_log add column if not exists source text;
 alter table error_log add column if not exists message text;
 alter table error_log add column if not exists created_at timestamptz default now();
-alter table usage add column if not exists user_id uuid;
-alter table usage add column if not exists model text;
-alter table usage add column if not exists created_at timestamptz default now();
 alter table settings add column if not exists value jsonb;
 alter table rate_hits add column if not exists user_id uuid;
 alter table rate_hits add column if not exists ts timestamptz not null default now();
@@ -274,12 +270,12 @@ alter table comments enable row level security;   alter table library enable row
 alter table notifications enable row level security; alter table push_tokens enable row level security;
 alter table reports enable row level security;    alter table blocks enable row level security;
 alter table audit_log enable row level security;  alter table error_log enable row level security;
-alter table usage enable row level security;      alter table settings enable row level security;
+alter table settings enable row level security;
 alter table rate_hits enable row level security;
 
 -- حذف أي سياسات قديمة على جداولنا (من نسخة سابقة) قبل إنشاء سياساتنا
 do $$ declare r record; begin
-  for r in select policyname, tablename from pg_policies where schemaname = 'public' and tablename in ('profiles','categories','prompts','likes','saves','follows','comments','library','notifications','push_tokens','reports','blocks','audit_log','error_log','usage','settings','rate_hits') loop
+  for r in select policyname, tablename from pg_policies where schemaname = 'public' and tablename in ('profiles','categories','prompts','likes','saves','follows','comments','library','notifications','push_tokens','reports','blocks','audit_log','error_log','settings','rate_hits') loop
     execute format('drop policy if exists %I on public.%I', r.policyname, r.tablename);
   end loop;
 end $$;
@@ -448,6 +444,12 @@ grant execute on function prompts_gated(uuid[]) to anon, authenticated;
 -- ===== 11) التوثيق: التحقق من الحسابات (شارة موثّق) =====
 alter table profiles add column if not exists verified boolean not null default false;
 alter table profiles add column if not exists verified_at timestamptz;
+alter table profiles add column if not exists verification_tier smallint not null default 0;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_verification_tier_chk') then
+    alter table profiles add constraint profiles_verification_tier_chk check (verification_tier between 0 and 3);
+  end if;
+end $$;
 
 create table if not exists verification_requests (
   id uuid primary key default gen_random_uuid(),
@@ -468,42 +470,15 @@ create policy "read own verification" on verification_requests for select using 
 drop policy if exists "insert own verification" on verification_requests;
 create policy "insert own verification" on verification_requests for insert with check (auth.uid() = user_id and not_banned());
 
--- قياس شروط التوثيق: 10 برومبتات منشورة، 100 إعجاب، 50 متابع، عمر الحساب 30 يوماً
-create or replace function verification_stats(p_user uuid default null) returns json language plpgsql stable security definer set search_path = public as $$
-declare u uuid := coalesce(p_user, auth.uid()); v boolean; pn int; ln int; fn int; d int; req text;
-begin
-  if u is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
-  select coalesce(verified, false) into v from profiles where id = u;
-  select count(*) into pn from prompts where author_id = u;
-  select coalesce(sum(like_count), 0) into ln from prompts where author_id = u;
-  select count(*) into fn from follows where following_id = u and status = 'accepted';
-  select floor(extract(epoch from (now() - created_at)) / 86400)::int into d from profiles where id = u;
-  select status into req from verification_requests where user_id = u order by created_at desc limit 1;
-  return json_build_object('ok', true, 'verified', coalesce(v, false), 'status', req,
-    'prompts', pn, 'min_prompts', 10,
-    'likes', ln, 'min_likes', 100,
-    'followers', fn, 'min_followers', 50,
-    'days', coalesce(d, 0), 'min_days', 30,
-    'eligible', (not coalesce(v, false)) and pn >= 10 and ln >= 100 and fn >= 50 and coalesce(d, 0) >= 30);
-end $$;
-grant execute on function verification_stats(uuid) to authenticated;
-
-create or replace function request_verification(p_note text default null) returns json language plpgsql security definer set search_path = public as $$
-declare s json;
-begin
-  if auth.uid() is null then return json_build_object('ok', false, 'reason', 'auth'); end if;
-  s := verification_stats(auth.uid());
-  if (s ->> 'verified')::boolean then return json_build_object('ok', false, 'reason', 'already'); end if;
-  if not (s ->> 'eligible')::boolean then return json_build_object('ok', false, 'reason', 'not_eligible'); end if;
-  if exists (select 1 from verification_requests where user_id = auth.uid() and status = 'pending') then
-    return json_build_object('ok', false, 'reason', 'pending'); end if;
-  insert into verification_requests (user_id, note) values (auth.uid(), left(coalesce(p_note, ''), 500));
-  return json_build_object('ok', true);
-end $$;
-grant execute on function request_verification(text) to authenticated;
 
 -- ===== بطاقة المبدع: عمود card_fx (jsonb) بترحيل idempotent وتحقق بقائمة سماح =====
 alter table profiles add column if not exists card_fx jsonb;
+do $$ begin
+  if (select data_type from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'card_fx') = 'text' then
+    alter table profiles drop constraint if exists profiles_card_fx_check;
+    alter table profiles alter column card_fx type jsonb using (case when card_fx is null or btrim(card_fx) = '' then null else card_fx::jsonb end);
+  end if;
+end $$;
 
 create or replace function card_fx_valid(j jsonb) returns boolean language sql immutable as $$
 select j is null or (
@@ -524,6 +499,31 @@ select j is null or (
 
 alter table profiles drop constraint if exists profiles_card_fx_check;
 alter table profiles add constraint profiles_card_fx_check check (card_fx_valid(card_fx));
+
+-- ===== حماية أعمدة الصلاحيات في profiles: لا يغيّرها إلا الخادم (service role / SQL) أو الأدمن =====
+create or replace function protect_profile_privileged() returns trigger language plpgsql security definer set search_path = public as $$
+declare privileged boolean;
+begin
+  privileged := auth.uid() is null
+    or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+  if privileged then return new; end if;
+  if tg_op = 'INSERT' then
+    new.plan := 'free'; new.verified := false; new.verified_at := null;
+    new.verification_tier := 0; new.role := 'user'; new.banned := false;
+  else
+    new.plan := old.plan; new.verified := old.verified; new.verified_at := old.verified_at;
+    new.verification_tier := old.verification_tier; new.role := old.role; new.banned := old.banned;
+  end if;
+  return new;
+end $$;
+drop trigger if exists profiles_protect_privileged on profiles;
+create trigger profiles_protect_privileged before insert or update on profiles for each row execute function protect_profile_privileged();
+revoke execute on function protect_profile_privileged() from public, anon, authenticated;
+
+-- ===== تنظيف عناصر قديمة غير مستخدمة =====
+drop function if exists verification_stats(uuid);
+drop function if exists request_verification(text);
+drop table if exists usage;
 
 notify pgrst, 'reload schema';
 

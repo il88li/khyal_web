@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from 'react';
+import { clamp } from "@/lib/util";
 
 const CARD =
   'group relative grid place-items-center w-[300px] h-[400px] overflow-hidden rounded-[var(--pixel-card-radius,24px)] isolate outline-none select-none [-webkit-tap-highlight-color:transparent] [&>:not(canvas):not([data-rim])]:relative [&>:not(canvas):not([data-rim])]:z-[1]';
@@ -122,7 +123,6 @@ const TRIGGERS = ['hover', 'click', 'always'];
 const APPEAR = 0.26;
 const EXIT = 0.22;
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const smoothstep = (edge0: number, edge1: number, value: number) => {
   const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);

@@ -17,7 +17,7 @@ export type PreviewActions = {
   liked: boolean; saved: boolean; likes: number;
   onLike: () => void; onSave: () => void; onComment: () => void; onCopy: () => void; onShare: () => void;
 };
-const clamp = (im: Img) => { const r = im.w && im.h ? im.w / im.h : 1; return Math.min(Math.max(r, 0.7), 1.8); };
+const ratioOf = (im: Img) => { const r = im.w && im.h ? im.w / im.h : 1; return Math.min(Math.max(r, 0.7), 1.8); };
 const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : null);
 
 /** إجراءات داخلية عند الفتح من صفحة لا تملك حالة البطاقة (مثل الملف الشخصي) */
@@ -187,7 +187,7 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
             : <div className="columns-2 gap-4">
                 {sim.map((s) => (
                   <button key={s.id} onClick={() => openSim(s.id)} aria-label="معاينة" className="mb-4 block w-full break-inside-avoid overflow-hidden rounded-xl bg-mist transition-all active:scale-95">
-                    <img src={s.img.url} alt="" loading="lazy" decoding="async" className="block h-full w-full object-cover" style={{ aspectRatio: clamp(s.img) }} />
+                    <img src={s.img.url} alt="" loading="lazy" decoding="async" className="block h-full w-full object-cover" style={{ aspectRatio: ratioOf(s.img) }} />
                   </button>))}
               </div>}
         </section>

@@ -1,9 +1,9 @@
 // lib/algorithm.ts — خوارزمية التوزيع/التسويق للمنشئين + مقياس جاهزية النشر
 // شفّافة بالكامل: كل قرار له سبب مكتوب، ليعلّم المنشئ كيف يرفع وصول برومبته.
 import type { PromptRow } from "@/types";
+import { clamp } from "./util";
 
 const HOUR = 3_600_000;
-const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 
 export type Signals = {
   velocity: number;   // سرعة التفاعل (تفاعل مرجّح لكل ساعة)

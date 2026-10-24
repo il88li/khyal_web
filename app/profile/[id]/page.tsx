@@ -13,8 +13,9 @@ import { PromptCover } from "@/components/PromptCover";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
 import { BADGES, BadgeStrip, VerifiedBadge, badgeStats, levelOf, nextStep, type BStats } from "@/components/badges";
 import CreatorCardSlot from "@/components/CreatorCardSlot";
+import { NetworkSheet } from "@/components/NetworkSheet";
 
-type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null; card_fx?: unknown };
+type Prof = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; cover_url: string | null; bio: string | null; is_private: boolean; links: string[] | null; streak: number | null; card_fx?: unknown; verified?: boolean; verification_tier?: number | null };
 type Cell = { id: string; body: string; enhanced: string | null; images: { url: string }[]; like_count?: number };
 const SEL = "id,body,enhanced,images,like_count,comment_count,category_id,created_at,author_id";
 
@@ -22,7 +23,8 @@ export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const [me, setMe] = useState<string | undefined>(), [p, setP] = useState<Prof | null>(null), [cells, setCells] = useState<Cell[]>([]), [saved, setSaved] = useState<Cell[]>([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, prompts: 0 }), [likes, setLikes] = useState(0), [fol, setFol] = useState(false), [pend, setPend] = useState(false), [tab, setTab] = useState<"posts" | "saved">("posts"), [ready, setReady] = useState(false);
-  const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null), [verified, setVerified] = useState(false);
+  const [pv, setPv] = useState<PromptRow | null>(null), [err, setErr] = useState(false), [tick, setTick] = useState(0), [up, setUp] = useState(""), [badges, setBadges] = useState<BStats | null>(null), [verified, setVerified] = useState(false), [vTier, setVTier] = useState<number>(1);
+  const [netOpen, setNetOpen] = useState(false), [netTab, setNetTab] = useState<"followers" | "following">("followers");
   async function change(kind: "cover_url" | "avatar_url", f?: File) {
     if (!f || !me) return; setUp(kind);
     try {
@@ -59,19 +61,44 @@ export default function Profile() {
 
   useEffect(() => { uid().then(setMe); }, []);
   useEffect(() => { if (pid) badgeStats(pid).then(setBadges); }, [pid]);
-  useEffect(() => { // شارة التوثيق (اختيارية: تُتجاهل قبل تنفيذ التهيئة)
+  useEffect(() => { // شارة التوثيق والمرحلة
     setVerified(false);
+    setVTier(1);
     if (!pid) return;
-    sb.from("profiles").select("verified").eq("id", pid).maybeSingle().then(({ data }) => { if (data) setVerified(!!(data as any).verified); });
+    sb.from("profiles").select("verified,verification_tier").eq("id", pid).maybeSingle().then(({ data }) => {
+      if (data) {
+        setVerified(!!(data as any).verified);
+        setVTier((data as any).verification_tier ? Number((data as any).verification_tier) : 1);
+      }
+    });
   }, [pid]);
   useEffect(() => {
     if (!pid) return;
     const count = (t: string, col: string) => { const q = sb.from(t).select("*", { count: "exact", head: true }).eq(col, pid); return t === "follows" ? q.eq("status", "accepted") : q; };
-    Promise.all([sb.from("profiles").select("id,username,display_name,avatar_url,cover_url,bio,is_private,links,card_fx").eq("id", pid).maybeSingle(), count("follows", "following_id"), count("follows", "follower_id"), count("prompts", "author_id"),
+    Promise.all([
+      sb.from("profiles").select("id,username,display_name,avatar_url,cover_url,bio,is_private,links,card_fx,verified,verification_tier").eq("id", pid).maybeSingle(),
+      count("follows", "following_id"),
+      count("follows", "follower_id"),
+      count("prompts", "author_id"),
       sb.from("prompts").select(SEL).eq("author_id", pid).order("created_at", { ascending: false }).limit(60),
       sb.from("prompts").select("like_count").eq("author_id", pid),
-      me ? sb.from("follows").select("status").match({ follower_id: me, following_id: pid }).maybeSingle() : Promise.resolve({ data: null })]).then(([pr, a, b, c, ps, lk, f]: any) => {
-      setP(pr.data ? { ...pr.data, streak: null } : null); setStats({ followers: a.count ?? 0, following: b.count ?? 0, prompts: c.count ?? 0 }); setLikes((lk.data ?? []).reduce((s: number, x: any) => s + (x.like_count ?? 0), 0)); setCells(ps.data ?? []); setFol(f.data?.status === "accepted"); setPend(f.data?.status === "pending"); setReady(true);
+      me ? sb.from("follows").select("status").match({ follower_id: me, following_id: pid }).maybeSingle() : Promise.resolve({ data: null })
+    ]).then(([pr, a, b, c, ps, lk, f]: any) => {
+      if (pr.data) {
+        setP({ ...pr.data, streak: null });
+        if (pr.data.verified) {
+          setVerified(true);
+          setVTier(pr.data.verification_tier ? Number(pr.data.verification_tier) : 1);
+        }
+      } else {
+        setP(null);
+      }
+      setStats({ followers: a.count ?? 0, following: b.count ?? 0, prompts: c.count ?? 0 });
+      setLikes((lk.data ?? []).reduce((s: number, x: any) => s + (x.like_count ?? 0), 0));
+      setCells(ps.data ?? []);
+      setFol(f.data?.status === "accepted");
+      setPend(f.data?.status === "pending");
+      setReady(true);
     }).catch(() => { setErr(true); setReady(true); });
   }, [pid, me, tick]);
   useEffect(() => { // المحفوظات (لصاحب الحساب فقط)
@@ -206,10 +233,19 @@ export default function Profile() {
 
       {/*3 — الهوية موسّطة: اسم + @username + شارات */}
       <div className="flex flex-col items-center gap-1 px-2 pt-2 text-center">
-        <h1 className="flex items-center justify-center gap-1.5 text-2xl font-bold tracking-tight text-charcoal">{p?.display_name ?? <span className="inline-block h-6 w-28 animate-pulse rounded-full bg-mist" />}{verified && <VerifiedBadge size={20} />}</h1>
+        <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-charcoal">
+          {p?.display_name ?? <span className="inline-block h-6 w-28 animate-pulse rounded-full bg-mist" />}
+          {verified && <VerifiedBadge tier={vTier} size={22} label />}
+        </h1>
         <p className="text-caption text-smoke">{p ? <bdi dir="ltr">@{p.username}</bdi> : ""}</p>
         <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
           {badges && <span className="chip chip-gold">المستوى {levelOf(badges)}</span>}
+          {verified && (
+            <Link href="/verification" className="chip bg-brand-tint text-brand-ink text-xs font-semibold gap-1">
+              <span>المرحلة {vTier}</span>
+              <span className="text-[10px] text-smoke">تفاصيل</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -226,14 +262,49 @@ export default function Profile() {
         />
       )}
 
-      {/*5 — الإحصاءات: ثلاثة أعمدة بلا بطاقات (طاقة الأرقام وحدها) */}
-      <dl className="grid w-full grid-cols-3 gap-4 px-4 pt-4">
-        {([["prompts", "برومبت", FileText, "bg-brand-tint text-brand-ink"], ["followers", "متابِع", Users, "bg-ok-tint text-ok-ink"], ["following", "يتابع", UserPlus, "bg-gold-tint text-gold-ink"]] as const).map(([k, l, Icon, tone]) => (
-          <div key={k} className="stat-tile">
-            <span className={`stat-icon ${tone}`}><Icon size={20} /></span>
-            <dt className="stat-value">{stats[k]}</dt>
-            <dd className="stat-label">{l}</dd>
-          </div>))}
+      {/*5 — الإحصاءات: ثلاثة أعمدة تفاعلية مع واجهة المتابعين والمتابعون */}
+      <dl className="grid w-full grid-cols-3 gap-3 px-4 pt-4">
+        <div className="stat-tile">
+          <span className="stat-icon bg-brand-tint text-brand-ink"><FileText size={20} /></span>
+          <dt className="stat-value">{stats.prompts}</dt>
+          <dd className="stat-label">برومبت</dd>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (navigator.vibrate) navigator.vibrate(8);
+            setNetTab("followers");
+            setNetOpen(true);
+          }}
+          className="stat-tile group transition-all duration-200 hover:border-brand/40 active:scale-95 cursor-pointer relative text-center"
+          title="عرض قائمة المتابعين"
+        >
+          <span className="stat-icon bg-ok-tint text-ok-ink group-hover:scale-110 transition-transform"><Users size={20} /></span>
+          <dt className="stat-value">{stats.followers}</dt>
+          <dd className="stat-label flex items-center justify-center gap-1 text-charcoal font-semibold">
+            <span>المتابعون</span>
+            <span className="text-[11px] text-brand">←</span>
+          </dd>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (navigator.vibrate) navigator.vibrate(8);
+            setNetTab("following");
+            setNetOpen(true);
+          }}
+          className="stat-tile group transition-all duration-200 hover:border-brand/40 active:scale-95 cursor-pointer relative text-center"
+          title="عرض الحسابات التي يتابعها"
+        >
+          <span className="stat-icon bg-gold-tint text-gold-ink group-hover:scale-110 transition-transform"><UserPlus size={20} /></span>
+          <dt className="stat-value">{stats.following}</dt>
+          <dd className="stat-label flex items-center justify-center gap-1 text-charcoal font-semibold">
+            <span>يتابعهم</span>
+            <span className="text-[11px] text-brand">←</span>
+          </dd>
+        </button>
       </dl>
 
       {/*6 — الإجراءات: أساسي موسّط + ثانويتان */}
@@ -305,6 +376,21 @@ export default function Profile() {
           {busy === "edit" ? "جارٍ الحفظ…" : "حفظ التعديل"}
         </button>
       </BottomSheet>
+
+      {/* واجهة المتابعين والمتابعون */}
+      {pid && (
+        <NetworkSheet
+          open={netOpen}
+          onClose={() => setNetOpen(false)}
+          targetUserId={pid}
+          targetUserName={p?.display_name || p?.username || "المستخدم"}
+          initialTab={netTab}
+          onCountChange={(d) => {
+            if (d.following) setStats((s) => ({ ...s, following: Math.max(0, s.following + d.following!) }));
+            if (d.followers) setStats((s) => ({ ...s, followers: Math.max(0, s.followers + d.followers!) }));
+          }}
+        />
+      )}
     </main>
   );
 }

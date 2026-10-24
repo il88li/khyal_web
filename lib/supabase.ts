@@ -6,12 +6,18 @@ import { useEffect, useState } from "react";
 import type { Img } from "@/types";
 
 // lib/supabase.ts — عميل المتصفح الموحّد + مساعد التنبيهات
-const ssr = typeof window === "undefined"; // أثناء البناء/الـ prerender فقط
 export const sb = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || (ssr ? "https://placeholder.supabase.co" : ""),
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (ssr ? "placeholder" : "")
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
 );
 export type Tone = "info" | "success" | "error";
+/** ينسخ نصاً للحافظة مع اهتزاز خفيف وإشعار (الواجهة الموحّدة لكل أزرار النسخ) */
+export async function copyText(text: string, msg = "نُسخ البرومبت") {
+  await navigator.clipboard.writeText(text);
+  navigator.vibrate?.(10);
+  toast(msg);
+}
+
 export const toast = (m: string, tone: Tone = "info") =>
   typeof window !== "undefined" && window.dispatchEvent(new CustomEvent("khiyal:toast", { detail: { msg: m, tone } }));
 export const uid = async () => (await sb.auth.getSession()).data.session?.user.id;
@@ -194,15 +200,30 @@ export async function withMeta<T extends { id: string }>(rows: T[]): Promise<T[]
   return rows;
 }
 
-/** يدمج شارة التوثيق على كائن الكاتب (اختياري: يتجاهل غياب العمود قبل تنفيذ التهيئة) */
+/** يدمج شارة التوثيق والمرحلة على كائن الكاتب (اختياري: يتجاهل غياب العمود قبل تنفيذ التهيئة) */
 export async function withVerified<T extends { id: string }>(rows: T[]): Promise<T[]> {
   const ids = Array.from(new Set(rows.map((r: any) => r.author?.id).filter(Boolean))) as string[];
   if (!ids.length) return rows;
   try {
-    const v = await sb.from("profiles").select("id,verified").in("id", ids);
-    if (!v.error && v.data) {
-      const V = new Map((v.data as any[]).map((p) => [p.id, p.verified]));
-      rows.forEach((r: any) => { if (r.author && V.has(r.author.id)) r.author.verified = V.get(r.author.id); });
+    let res: any = await sb.from("profiles").select("id,verified,verification_tier").in("id", ids);
+    if (res.error) {
+      res = await sb.from("profiles").select("id,verified").in("id", ids);
+    }
+    if (!res.error && res.data) {
+      const V = new Map((res.data as any[]).map((p) => [
+        p.id,
+        {
+          verified: !!p.verified,
+          tier: p.verification_tier ? Number(p.verification_tier) : p.verified ? 1 : 0,
+        },
+      ]));
+      rows.forEach((r: any) => {
+        if (r.author && V.has(r.author.id)) {
+          const item = V.get(r.author.id)!;
+          r.author.verified = item.verified;
+          r.author.verification_tier = item.tier;
+        }
+      });
     }
   } catch {}
   return rows;

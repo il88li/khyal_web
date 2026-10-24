@@ -38,22 +38,23 @@ export function Skeleton({
     return (
       <div className={`flex flex-col gap-4 ${className}`} role="status" aria-busy="true" aria-label={label}>
         {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="prompt-card card prompt-card-skel">
+          <div key={i} className="card prompt-card prompt-card-skel" aria-hidden>
             <div className="prompt-card-head">
-              <div className="skel h-10 w-10 !rounded-full" />
-              <div className="flex flex-1 flex-col gap-2"><div className="skel h-3 w-1/3" /><div className="skel h-2.5 w-1/5" /></div>
-              <div className="skel h-9 w-20 !rounded-full" />
+              <div className="skel h-10 w-10 shrink-0 rounded-full" />
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <div className="skel h-3.5 w-28 rounded-full" />
+                <div className="skel h-3 w-16 rounded-full" />
+              </div>
+              <div className="skel h-8 w-20 shrink-0 rounded-full" />
             </div>
-            <div className="skel aspect-[4/3] w-full" />
+            <div className="prompt-card-media skel" />
             <div className="prompt-card-copy-wrap flex flex-col gap-2">
-              <div className="skel h-3.5 w-2/3" />
-              <div className="skel h-3 w-full" />
-              <div className="skel h-3 w-4/5" />
+              <div className="skel h-3.5 w-full rounded-full" />
+              <div className="skel h-3.5 w-3/4 rounded-full" />
             </div>
-            <div className="flex items-center gap-3">
-              <div className="skel h-9 w-16 !rounded-full" />
-              <div className="skel h-9 w-16 !rounded-full" />
-              <div className="skel ml-auto h-9 w-28 !rounded-full" />
+            <div className="prompt-card-footer">
+              <div className="skel h-6 w-32 rounded-full" />
+              <div className="skel h-9 w-full rounded-full" />
             </div>
           </div>
         ))}

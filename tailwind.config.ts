@@ -1,4 +1,4 @@
-// tailwind.config.ts — نظام خيال المسطح · اللون الأساسي أحمر الفرشاة (انظر design.md)
+// tailwind.config.ts — مقياس خيال — الألوان عبر متغيّرات CSS (app/globals.css ثم app/clean.css)
 import type { Config } from "tailwindcss";
 
 export default {
