@@ -20,6 +20,7 @@
 | `components/states.tsx` | EmptyState / ErrorState / Skeleton / SafeImg — استخدمها لكل حالة فراغ وخطأ وتحميل |
 | `components/icons.tsx` | **الأيقونات الوحيدة** (غلاف lucide بسمك 1.5). أيقونة جديدة تُضاف هنا ثم تُستورد منه |
 | `components/PromptCard.tsx` | بطاقة البرومبت (لا تكرّر منطقها في صفحات أخرى) |
+| `components/PromptPeekLayer.tsx` | طبقة نص البرومبت فوق الصورة (ضغطة مطوّلة 450ms أو كبسولة «برومبت»، سحب لأسفل/Esc للإغلاق). مشتركة بين بطاقة الرئيسية (`maxVh=70`) والمعاينة (`maxVh=85`) — أي فعل جديد على البرومبت الذي له صورة يُضاف إلى `actions` فيها لا خارجها |
 | `lib/supabase.ts` | عميل المتصفح: `sb`، `uid()`، `toast`، `copyText`، `explain` (أخطاء عربية)، رفع الصور |
 | `lib/server.ts` | خادم فقط: `svc()` (service role)، جلسة الأدمن، OpenRouter، الإشعارات، التهيئة الذاتية |
 | `lib/access.ts` + دالة `prompt_gated` | رؤية نص البرومبت حسب المستوى (ضيف/مجاني/برو) |

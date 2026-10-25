@@ -27,6 +27,7 @@
 | `lib/setup-sql.ts` · `supabase/setup.sql` | مُولَّدان من `supabase/setup.src.sql` (المصدر الوحيد للمخطط) عبر `npm run setup:build`؛ يعمل تلقائياً قبل كل `npm run build` |
 | `lib/util.ts` | دوال مساعدة مشتركة صغيرة (`clamp`…) |
 | `components/ui.tsx` | BottomSheet, Toaster, CopyButton, Lightbox, Gallery, Comments, Chips, Splash, DailyCard |
+| `components/PromptPeekLayer.tsx` | طبقة البرومبت فوق الصورة (الرئيسية والمعاينة) |
 | `components/chrome.tsx` | TopBar, BottomNav, Sidebar, Shell, Providers, PwaBoot |
 | `components/PromptCard.tsx` | بطاقة البرومبت |
 | `app/*` | الصفحات: الرئيسية، `/enhance`، `/new`، `/library`، `/search`، `/profile/[id]`، `/settings`، `/notifications`، `/requests`، `/welcome`، `/auth`، `/setup`، `/admin`، `/p/[id]` + مسارات `api/*` |

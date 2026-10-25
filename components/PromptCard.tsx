@@ -12,10 +12,12 @@ import { BottomSheet, Comments, VarsSheet } from "./ui";
 import { VerifiedBadge } from "./badges";
 import { PromptCover } from "./PromptCover";
 import { SafeImg } from "./states";
+import PromptPeekLayer from "./PromptPeekLayer";
 import { previewOf } from "@/lib/access";
 // معاينة الصور ثقيلة (سحب/تكبير) — تُحمَّل فقط عند فتحها
 const ImagePreview = dynamic(() => import("./ImagePreview"), { ssr: false });
 import type { PromptRow } from "@/types";
+import { useTilt } from "@/lib/tilt";
 
 const REASONS = ["محتوى مسيء", "احتيال أو spam", "انتهاك حقوق", "أخرى"];
 
@@ -49,6 +51,7 @@ let entranceSeen = false;
 const MAX_STAGGER = 4, STEP = 0.05;
 
 function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
+  const tilt = useTilt(2); // ميل ≤ 2° بفأرة فقط
   const cats = useCategories();
   const [liked, setLiked] = useState(!!p.liked);
   const [saved, setSaved] = useState(!!p.saved);
@@ -199,6 +202,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 420, damping: 34, delay: firstRun.current ? Math.min(i, MAX_STAGGER) * STEP : 0 }}
       className="prompt-card card"
+      {...tilt}
     >
       <header className="prompt-card-head">
         <Link
@@ -231,7 +235,36 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
       </header>
 
       {first ? (
-        <div className="prompt-card-media">
+        <PromptPeekLayer
+          className="prompt-card-media"
+          maxVh={70}
+          imageSrc={first.url}
+          imageAlt={`مرفق للبرومبت: ${name}`}
+          title={p.title}
+          promptText={`${revealEnabled ? shown : gate.shown}${!revealEnabled && gate.locked ? "…" : ""}`}
+          copyText={shown}
+          onCopy={copy}
+          topExtra={hasBoth && (
+            <div className="seg prompt-origin-toggle">
+              {([[false, "✨ محسّن"], [true, "الأصلي"]] as const).map(([v, label]) => (
+                <button key={label} data-on={orig === v ? "1" : undefined} onClick={() => setOrig(v)}>{label}</button>
+              ))}
+            </div>
+          )}
+          lockNote={!revealEnabled && (
+            <Link href="/pricing" className="prompt-lock-note prompt-lock-note--glass">باقي البرومبت لمشتركي خيال — اعرف المزيد</Link>
+          )}
+          actions={({ close }: { close: () => void }) => (
+            <div className="peek-actions">
+              {vars.length ? (
+                <button onClick={() => { close(); setVsheet(true); }} className="btn prompt-use-cta"><Braces size={16} /><span>عبّئ المتغيرات</span></button>
+              ) : (
+                <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn prompt-use-cta"><Sparkles size={16} /><span>جرّبه أو حسّنه</span></Link>
+              )}
+              {!mine && p.id !== "preview" && <Link href={`/new?fork=${p.id}`} aria-label="فرّع البرومبت" className="btn prompt-fork-cta"><GitFork size={16} /><span>فرّع</span></Link>}
+            </div>
+          )}
+        >
           <div
             onScroll={(e) => setIdx(Math.round(Math.abs(e.currentTarget.scrollLeft) / e.currentTarget.clientWidth))}
             className="prompt-gallery-track"
@@ -254,7 +287,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
               {p.images.map((_, i) => <span key={i} className={i === idx ? "active" : ""} />)}
             </div>
           )}
-        </div>
+        </PromptPeekLayer>
       ) : (
         /* بلا صورة: غلاف مصمّم بديل يحمل روح البرومبت بدل الفراغ */
         <div className="prompt-card-media prompt-card-media--cover">
@@ -262,9 +295,9 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         </div>
       )}
 
-      {(cat || hot || fresh || trusted || hasBoth || !!p.tags?.length) && (
+      {(cat || hot || fresh || trusted || (hasBoth && !first) || !!p.tags?.length) && (
         <div className="prompt-card-tags">
-          {hasBoth && (
+          {hasBoth && !first && (
             <div className="seg prompt-origin-toggle">
               {([[false, "✨ محسّن"], [true, "الأصلي"]] as const).map(([v, label]) => (
                 <button key={label} data-on={orig === v ? "1" : undefined} onClick={() => setOrig(v)}>
@@ -284,7 +317,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
       )}
 
       {/* بطاقة البرومبت: بنفس نظام معاينة الصورة — ارتفاع ثابت وتمرير داخلي بدل الكشف المنسدل */}
-      <div className="prompt-card-copy-wrap">
+      {!first && <div className="prompt-card-copy-wrap">
         <section
           onClick={tapText}
           role="button"
@@ -293,9 +326,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
           aria-label={revealEnabled ? "نص البرومبت" : "مقتطف من البرومبت"}
           className="glass-h prompt-text-card"
         >
-          {first
-            ? <img src={first.url} alt="" aria-hidden="true" className="glass-h-bg" />
-            : <span aria-hidden className="glass-h-fallback" />}
+          <span aria-hidden className="glass-h-fallback" />
           <div className="glass-h-body">
             {p.title && <p className="text-base font-bold text-white">{p.title}</p>}
             <div className="prompt-scroll prompt-text-scroll">
@@ -310,7 +341,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
             )}
           </div>
         </section>
-      </div>
+      </div>}
 
       {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && (
         <p className="prompt-card-counts">
@@ -339,6 +370,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
             <button onClick={() => setRep(true)} className="prompt-social-icon" aria-label="خيارات المنشور">⋯</button>
           )}
         </div>
+        {!first && (
         <div className={`prompt-cta-row ${!mine && p.id !== "preview" ? "with-fork" : ""}`}>
           <button onClick={copy} className="btn btn-primary prompt-copy-cta">
             <Copy size={16} /><span>انسخ البرومبت</span>
@@ -350,6 +382,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
           )}
           {!mine && p.id !== "preview" && <Link href={`/new?fork=${p.id}`} aria-label="فرّع البرومبت" className="btn prompt-fork-cta"><GitFork size={16} /><span>فرّع</span></Link>}
         </div>
+        )}
       </footer>
 
       {/* ══════════════ النوافذ ══════════════ */}

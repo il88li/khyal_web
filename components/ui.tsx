@@ -1,6 +1,6 @@
 "use client";
 // components/ui.tsx — المكوّنات المشتركة: BottomSheet, Toaster, CopyButton, Lightbox, Skeleton, Gallery, Comments, Splash, VarsSheet
-import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useDragControls, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { AlertTriangle, CheckCircle, Copy, Flame, Info, Send, Target, X } from "@/components/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +11,10 @@ import { challengeOf } from "@/types";
 import type { Img } from "@/types";
 
 export { Skeleton } from "./states";
+
+/** منحنيات iOS (تطابق --ease-ios و --ease-ios-out في globals.css) */
+const IOS = [0.32, 0.72, 0, 1] as const;
+const IOS_OUT = [0.16, 1, 0.3, 1] as const;
 
 /* ════════════════════════════════════════════════════════════════
    BottomSheet — نافذة سفلية: سحب من المقبض للإغلاق، Esc، قفل التمرير
@@ -30,6 +34,7 @@ export function BottomSheet({
   layer?: "top";
 }) {
   const controls = useDragControls();
+  const reduce = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -54,6 +59,7 @@ export function BottomSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0.01 : 0.35, ease: IOS_OUT }}
             onClick={onClose}
             className={`fixed inset-0 bg-black/40 ${layer === "top" ? "z-[70]" : "z-50"}`}
           />
@@ -68,19 +74,19 @@ export function BottomSheet({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, i) => (i.offset.y > 120 || i.velocity.y > 600) && onClose()}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 460, damping: 38 }}
-            className={`fixed inset-x-0 bottom-0 ${layer === "top" ? "z-[70]" : "z-50"} mx-auto max-h-[70vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-3xl bg-snow shadow-lift`}
+            initial={reduce ? { opacity: 0 } : { y: "100%" }}
+            animate={reduce ? { opacity: 1 } : { y: 0 }}
+            exit={reduce ? { opacity: 0 } : { y: "100%" }}
+            transition={{ duration: reduce ? 0.01 : 0.35, ease: IOS_OUT }}
+            className={`fixed inset-x-0 bottom-0 ${layer === "top" ? "z-[70]" : "z-50"} mx-auto max-h-[70vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-ios-xl bg-snow shadow-ios-sheet`}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div
               onPointerDown={(e) => controls.start(e)}
               style={{ touchAction: "none" }}
-              className="sticky top-0 z-10 flex cursor-grab flex-col items-center gap-1.5 bg-snow px-4 pb-2 pt-2"
+              className="sticky top-0 z-10 flex min-h-touch cursor-grab flex-col items-center justify-center gap-1.5 bg-snow px-4 pb-2 pt-2"
             >
-              <span className="h-1 w-8 rounded-full bg-silver" />
+              <span className="h-1 w-9 rounded-full bg-silver" />
               {title && <h2 className="text-lg font-bold text-charcoal">{title}</h2>}
             </div>
             <div className="flex flex-col px-4 pb-4">{children}</div>
@@ -158,6 +164,7 @@ export function Modal({
    Toaster — تنبيه علوي: خلفية حبرية + نص كريمي
    ════════════════════════════════════════════════════════════════ */
 export function Toaster() {
+  const reduce = useReducedMotion();
   const [items, setItems] = useState<{ id: number; msg: string; tone: Tone }[]>([]);
   useEffect(() => {
     let seq = 0;
@@ -185,11 +192,11 @@ export function Toaster() {
               key={t.id}
               role={t.tone === "error" ? "alert" : "status"}
               aria-live={t.tone === "error" ? "assertive" : "polite"}
-              initial={{ y: -12, opacity: 0, scale: 0.97 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -12, opacity: 0, scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 500, damping: 38 }}
-              className="pointer-events-auto flex w-full items-center gap-2.5 rounded-xl bg-charcoal px-4 py-2.5 text-base font-medium text-snow shadow-lift"
+              initial={reduce ? { opacity: 0 } : { y: -16, opacity: 0, scale: 0.97 }}
+              animate={reduce ? { opacity: 1 } : { y: 0, opacity: 1, scale: 1 }}
+              exit={reduce ? { opacity: 0 } : { y: -16, opacity: 0, scale: 0.97 }}
+              transition={{ duration: reduce ? 0.01 : 0.25, ease: IOS }}
+              className="pointer-events-auto flex min-h-touch w-full items-center gap-2.5 rounded-ios-lg bg-charcoal px-4 py-2.5 text-base font-medium text-snow shadow-ios-card"
             >
               <Icon size={17} className={`shrink-0 ${COLORS[t.tone]}`} aria-hidden />
               <span className="min-w-0 flex-1 leading-snug">{t.msg}</span>
@@ -207,18 +214,24 @@ export function Toaster() {
 export function CopyButton({
   text,
   label = "نسخ البرومبت",
+  onCopy,
+  className = "",
 }: {
   text: string;
   label?: string;
+  /** إن وُجد يُنفَّذ بدل النسخ الافتراضي (مثلاً نسخ + عدّاد النسخ + إشعار) */
+  onCopy?: () => void | Promise<void>;
+  className?: string;
 }) {
   return (
     <button
       onClick={async () => {
+        if (onCopy) { await onCopy(); return; }
         await navigator.clipboard.writeText(text);
         navigator.vibrate?.(10);
         toast("نُسخ البرومبت");
       }}
-      className="btn"
+      className={`btn min-h-touch rounded-ios-pill px-ios-4 transition-[transform,background-color,color] duration-ios-2 ease-ios active:scale-[.97] ${className}`}
     >
       <Copy size={18} />
       {label}
@@ -630,6 +643,7 @@ export function Comments({ promptId }: { promptId: string }) {
    Splash — شاشة افتتاح خيال
    ════════════════════════════════════════════════════════════════ */
 export function Splash() {
+  const reduce = useReducedMotion();
   const [show, setShow] = useState(true);
   useEffect(() => {
     try {
@@ -654,22 +668,22 @@ export function Splash() {
           id="khiyal-splash"
           aria-hidden
           initial={false}
-          exit={{ opacity: 0, scale: 1.04 }}
-          transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
+          transition={{ duration: reduce ? 0.01 : 0.5, ease: IOS }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.2, 0, 0, 1] }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            transition={{ duration: reduce ? 0.01 : 0.5, ease: IOS }}
             className="flex flex-col items-center gap-4"
           >
             <span className="brand-mark !h-20 !w-20 !rounded-xl">
               <img src="/icons/khiyal-mark-192-v5.png" alt="" />
             </span>
             <motion.h1
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.4 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={{ delay: reduce ? 0 : 0.25, duration: reduce ? 0.01 : 0.5, ease: IOS }}
               className="text-2xl font-bold text-charcoal"
             >
               خيال
@@ -677,7 +691,7 @@ export function Splash() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
+              transition={{ delay: reduce ? 0 : 0.4, duration: reduce ? 0.01 : 0.5, ease: IOS }}
               className="text-caption text-smoke"
             >
               فكرتك تستحق صياغة أوضح
@@ -754,7 +768,7 @@ export function Chips({ items, value, onChange, wrap }: { items: string[]; value
   return (
     <div className={wrap ? "flex flex-wrap gap-2" : "-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]"}>
       {items.map((i) => (
-        <button key={i} onClick={() => onChange(i)} className={`min-h-9 shrink-0 rounded-full border px-3.5 text-base font-semibold ${value === i ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>
+        <button key={i} onClick={() => onChange(i)} className={`min-h-touch shrink-0 rounded-ios-pill border px-3.5 text-base font-semibold transition-[transform,background-color,color,border-color] duration-ios-2 ease-ios active:scale-[.97] ${value === i ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`}>{i}</button>
       ))}
     </div>
   );

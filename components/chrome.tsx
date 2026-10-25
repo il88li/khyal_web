@@ -1,6 +1,8 @@
 "use client";
 // components/chrome.tsx — تخطيط خيال Luminous Minimalism، RTL ومتجاوب
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
+import ButtonFx from "@/components/ButtonFx";
+import Reveal from "@/components/Reveal";
 import {
   BarChart3, Bell, BookMarked, Compass, Home, Info, MoreHorizontal,
   BadgeCheck, LogIn, LogOut, Plus, Settings, ShieldCheck, Sparkles, UserRound, Users,
@@ -168,7 +170,14 @@ export function TopBar() {
   const router = useRouter();
   const [unread, setUnread] = useState(0);
   const [more, setMore] = useState(false);
+  const [scrolled, setScrolled] = useState(false); // خط شعري رقيق تحت الهيدر عند التمرير
   useEffect(() => setMore(false), [path]);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 4);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
 
   useEffect(() => {
     if (path.startsWith("/auth") || path.startsWith("/admin")) return;
@@ -198,7 +207,7 @@ export function TopBar() {
   }, [router]);
 
   return (
-    <header className="app-topbar">
+    <header className="app-topbar" data-scrolled={scrolled ? "1" : undefined}>
       <div className="app-topbar-inner">
         <Link href="/" aria-label="خيال — الرئيسية" className="min-w-0 flex-1">
           <FuzzyBrand size={20} />
@@ -216,12 +225,14 @@ export function TopBar() {
 }
 
 function NavLink({ l: { href, label, icon: Icon }, path }: { l: NavItem; path: string }) {
+  const reduce = useReducedMotion();
+  const ios = { duration: reduce ? 0.01 : 0.25, ease: [0.32, 0.72, 0, 1] as const };
   const active = href === "/profile/me" ? path.startsWith("/profile/") : isActive(path, href);
   return (
     <li>
       <Link href={href} onClick={() => haptic(8)} aria-label={label} aria-current={active ? "page" : undefined} className="relative">
-        {active && <motion.span layoutId="nav-pill" className="absolute inset-x-1 top-1 -z-10 h-8 bg-brand-tint" style={{ borderRadius: 16 }} transition={{ type: "spring", stiffness: 420, damping: 28 }} />}
-        <motion.span animate={{ scale: active ? 1.08 : 1, y: active ? -1 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 26 }} className="flex">
+        {active && <motion.span layoutId="nav-pill" className="absolute inset-x-1 top-1 -z-10 h-8 bg-brand-tint" style={{ borderRadius: 16 }} transition={ios} />}
+        <motion.span animate={reduce ? {} : { scale: active ? 1.1 : 1, y: active ? -1 : 0 }} transition={reduce ? ios : { type: "spring", stiffness: 520, damping: 20 }} className="flex">
           <Icon size={24} fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.18 : 0} />
         </motion.span>
         <span>{label}</span>
@@ -260,10 +271,11 @@ const ENHANCE_LINK: NavItem = { href: "/enhance", label: "تحسين", icon: Spa
 
 export function BottomNav() {
   const path = usePathname();
+  const reduce = useReducedMotion();
   if (path.startsWith("/auth") || path.startsWith("/admin") || path.startsWith("/welcome") || path.startsWith("/setup") || path.startsWith("/offline")) return null;
   return (
     <nav className="mobile-bottomnav" aria-label="التنقل السفلي">
-      <motion.ul className="h-16" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 350, damping: 30 }}>
+      <motion.ul className="h-16" initial={reduce ? false : { y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: reduce ? 0.01 : 0.35, ease: [0.16, 1, 0.3, 1] }}>
         {MOBILE_LINKS.slice(0, 2).map((l) => <NavLink key={l.href} l={l} path={path} />)}
         <li className="create-slot"><Link href="/new" onClick={() => haptic(14)} className="create-link transition-all active:scale-95" aria-label="أنشئ برومبتًا"><Plus size={24} /><span>أنشئ</span></Link></li>
         <NavLink l={ENHANCE_LINK} path={path} />
@@ -285,7 +297,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const bare = isBare(path);
   const heading = PAGE_HEADINGS.find(([prefix]) => prefix === "/" ? path === "/" : path.startsWith(prefix));
   const hasRail = ["/", "/search", "/community", "/library"].some((route) => route === "/" ? path === "/" : path.startsWith(route));
-  if (bare) return <div className="mx-auto w-full max-w-[1380px] px-3 md:px-6" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>{children}</div>;
+  if (bare) return <div className="mx-auto w-full max-w-[1380px] px-3 md:px-6" style={{ paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)" }}>{children}</div>;
 
   return <>
     <Sidebar path={path} />
@@ -293,10 +305,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="workspace-shell">
       <div className={`workspace-grid${hasRail ? " has-rail" : ""}`}>
         <main className="workspace-column">
-          {heading && <header className="workspace-header">
+          {heading && <header key={path} className="workspace-header">
             <div className="min-w-0">
-              <h1 className="workspace-header-title">{heading[1]}</h1>
-              <p className="workspace-header-caption">{heading[2]}</p>
+              <Reveal><h1 className="workspace-header-title">{heading[1]}</h1></Reveal>
+              <Reveal delay={0.08}><p className="workspace-header-caption">{heading[2]}</p></Reveal>
             </div>
           </header>}
           {guarded && status !== "in" ? <Skeleton variant="card" count={2} /> : children}
@@ -399,6 +411,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const show = missing && !path.startsWith("/admin");
   return (
     <MotionConfig reducedMotion={r}>
+      <ButtonFx />
       <AuthProvider>{children}</AuthProvider>
       <OfflineBar />
       {show && (

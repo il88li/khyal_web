@@ -8,6 +8,7 @@ import { useAuth } from "./auth";
 import { Skeleton } from "./states";
 import { BottomSheet, Comments } from "./ui";
 import { VerifiedBadge } from "./badges";
+import PromptPeekLayer from "./PromptPeekLayer";
 import { previewOf } from "@/lib/access";
 import { sb, toast, uid, withMeta } from "@/lib/supabase";
 import type { Img, PromptRow } from "@/types";
@@ -129,12 +130,32 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
           <button onClick={onClose} aria-label="إغلاق" className="icon-btn shrink-0"><X size={24} /></button>
         </header>
 
-        {/* الصورة بمقاسها: تمرير وتكبير بالقرصة، ونقر مزدوج للتكبير */}
+        {/* الصورة بمقاسها: تمرير وتكبير بالقرصة، ونقر مزدوج للتكبير — ومن الضغطة المطوّلة أو الكبسولة تطلّ طبقة البرومبت فوقها */}
+        <PromptPeekLayer
+          className="rounded-xl"
+          maxVh={85}
+          imageSrc={im.url}
+          imageAlt=""
+          title={p.title}
+          tags={p.tags}
+          promptText={`${open ? full : gate.shown}${!open && gate.locked ? "…" : ""}`}
+          copyText={full}
+          onCopy={act.onCopy}
+          lockNote={gate.locked && !open ? (
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1 text-caption text-white/80"><Lock size={16} />جزء من النص فقط</span>
+              <button onClick={() => setOpen(true)} className="btn btn-xs bg-white !text-black">عرض البرومبت كاملاً</button>
+            </div>
+          ) : open ? (
+            <button onClick={() => setOpen(false)} className="self-start text-caption font-medium text-white/80">إخفاء</button>
+          ) : null}
+        >
         <div onClick={tap} className="max-h-[62dvh] w-full overflow-auto rounded-xl bg-mist touch-pan-x touch-pan-y touch-pinch-zoom [scrollbar-width:none]">
           <img src={im.url} alt="" draggable={false}
             className={zoom ? "block h-auto max-w-none" : "mx-auto block h-auto max-h-[62dvh] w-auto max-w-full object-contain"}
             style={zoom ? { width: "220%" } : undefined} />
         </div>
+        </PromptPeekLayer>
         {p.images.length > 1 && (
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
             {p.images.map((x, i) => (
@@ -144,25 +165,6 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
               </button>))}
           </div>
         )}
-
-        {/* بطاقة البرومبت: أفقية زجاجية مضغوطة، ارتفاع ثابت مع تمرير داخلي */}
-        <section aria-label="معاينة البرومبت" className="glass-h">
-          <img src={im.url} alt="" aria-hidden="true" className="glass-h-bg" />
-          <div className="glass-h-body glass-h-body--sm">
-            {p.title && <p className="text-sm font-semibold text-white">{p.title}</p>}
-            <div className="prompt-scroll prompt-text-scroll prompt-text-scroll--sm">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{open ? full : gate.shown}{!open && gate.locked && "…"}</p>
-            </div>
-            {!!p.tags?.length && <div className="flex flex-wrap gap-1">{p.tags.map((t) => <span key={t} className="rounded-full bg-white/15 px-2 text-micro text-white">{t}</span>)}</div>}
-            {gate.locked && !open && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1 text-caption text-white/80"><Lock size={16} />جزء من النص فقط</span>
-                <button onClick={() => setOpen(true)} className="btn btn-xs bg-white !text-black">عرض البرومبت كاملاً</button>
-              </div>)}
-            {open && (
-              <button onClick={() => setOpen(false)} className="self-start text-caption font-medium text-white/80">إخفاء</button>)}
-          </div>
-        </section>
 
         {/* الأيقونات الرئيسية */}
         <div className="flex w-full items-center justify-between">

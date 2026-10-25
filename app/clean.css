@@ -277,3 +277,89 @@ html.dark { --float-sm: 0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.45); }
 button.pstat { cursor: pointer; transition: transform .5s var(--spring), background-color .25s var(--ease); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button.pstat:active { transform: scale(.94); }
 button.pstat:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+
+/* ==================================================================
+   طبقة الشِل بلغة iOS — المرحلة 2 (آخر ما في الملف فتغلب ما قبلها)
+   هيدر وشريط تنقل: كبسولتان عائمتان شفافتان بتمويه، وSidebar بنصف قطر ios-md
+   ================================================================== */
+.app-topbar { height: 56px !important; border-radius: 28px !important;
+  background: rgb(var(--c-snow) / .78) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important; backdrop-filter: blur(20px) saturate(1.4) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06) !important;
+  transition: box-shadow var(--dur-2) var(--ease-ios); }
+.app-topbar[data-scrolled="1"] { box-shadow: 0 0 0 1px rgb(var(--c-line) / .55), 0 1px 0 rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08) !important; }
+.app-topbar-inner { height: 56px !important; min-height: 56px !important; padding-inline: 12px !important; }
+.app-topbar .icon-btn { min-width: 44px; min-height: 44px; }
+
+.mobile-bottomnav { border-radius: 999px !important; bottom: calc(10px + var(--safe-bottom)) !important;
+  background: rgb(var(--c-snow) / .82) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important; backdrop-filter: blur(20px) saturate(1.4) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08) !important; }
+.mobile-bottomnav a { min-width: 44px; min-height: 44px; transition: color var(--dur-2) var(--ease-ios), transform var(--dur-1) var(--ease-ios); }
+.mobile-bottomnav a:active { transform: scale(.97); }
+.mobile-bottomnav .create-link { transition: transform var(--dur-1) var(--ease-ios); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-topbar, .mobile-bottomnav { background: rgb(var(--c-snow)) !important; }
+}
+
+.sidebar-link { border-radius: 14px !important; min-height: 44px;
+  transition: background-color var(--dur-2) var(--ease-ios), color var(--dur-2) var(--ease-ios), transform var(--dur-1) var(--ease-ios), box-shadow var(--dur-1) var(--ease-ios); }
+.sidebar-link:active { transform: scale(.98); box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }
+
+/* ==================================================================
+   المرحلة 3 — تفاعل الأزرار الأساسية: بقعة ضوء بالفأرة + موجة عند اللمس
+   (خلف النص، بلا توهج ولا تغيير مقاسات؛ يُخفى عند تخفيف الحركة)
+   ================================================================== */
+.btn-primary:not(.absolute):not(.fixed):not(.sticky):not(.relative) { position: relative; }
+.btn-primary { isolation: isolate; }
+.btn-primary::before, .btn-primary::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; }
+.btn-primary::after { opacity: 0; transition: opacity var(--dur-2) var(--ease-ios);
+  background: radial-gradient(110px circle at var(--sx, 50%) var(--sy, 50%), rgb(255 255 255 / .24), transparent 70%); }
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover:not(:disabled)::after { opacity: 1; } }
+.btn-primary::before { opacity: 0; background: rgb(255 255 255 / .32); clip-path: circle(0 at var(--rx, 50%) var(--ry, 50%)); }
+.btn-primary.fx-rip::before { animation: fx-ripple var(--dur-3) var(--ease-ios-out); }
+@keyframes fx-ripple {
+  0% { opacity: 1; clip-path: circle(0 at var(--rx, 50%) var(--ry, 50%)); }
+  100% { opacity: 0; clip-path: circle(150% at var(--rx, 50%) var(--ry, 50%)); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-primary::before, .btn-primary::after { display: none; } }
+
+/* ==================================================================
+   المرحلة 4 — طبقة البرومبت (Peek): الصورة تملأ المساحة، والنص يطلّ فوقها بتمويه حيّ
+   ================================================================== */
+.peek-stage { position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.peek-stage.prompt-card-media { overflow: visible !important; }
+.peek-stage img { -webkit-user-drag: none; -webkit-touch-callout: none; }
+.peek-img-target { position: relative; overflow: hidden; border-radius: inherit; }
+/* المرشّح والتعتيم لا يُفعَّلان إلا أثناء الفتح كي لا يكلّفا شيئاً وقت الراحة */
+.peek-stage:not([data-peek="closed"]) .peek-img-target { filter: blur(calc(var(--peek-t, 0) * 12px)); will-change: filter; transform: translateZ(0); }
+.peek-stage:not([data-peek="closed"])::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; background: rgb(0 0 0 / calc(var(--peek-t, 0) * .35)); }
+
+.peek-pill { position: absolute; inset-inline: 0; bottom: 4px; z-index: 2; display: grid; place-items: center; width: fit-content; min-width: 44px; min-height: 44px; margin-inline: auto; padding: 0 6px; border: 0; background: none; color: inherit; cursor: pointer; transition: opacity var(--dur-2) var(--ease-ios); }
+.peek-pill-i { display: block; padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.4; color: rgb(255 255 255 / .7);
+  background: rgb(0 0 0 / .32); border: 1px solid rgb(255 255 255 / .28); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.peek-stage:not([data-peek="closed"]) .peek-pill { opacity: 0; pointer-events: none; }
+.peek-pill.is-anim .peek-pill-i { animation: peek-in .35s var(--ease-ios-out) both, peek-pulse 1.1s var(--ease-ios) .45s 2; }
+.peek-pill:not([data-inview="1"]) .peek-pill-i { animation-play-state: paused; }
+@keyframes peek-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes peek-pulse { 0%, 100% { opacity: 1; transform: translateY(0); } 50% { opacity: .6; transform: translateY(2px); } }
+
+.peek-layer { position: absolute; inset-inline: 0; bottom: 0; z-index: 3; display: flex; flex-direction: column; max-height: var(--peek-maxh, 70dvh); outline: none;
+  border-radius: 28px 28px 16px 16px; color: #fff; background: rgb(14 16 24 / .66);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 -8px 32px rgba(0,0,0,.12);
+  visibility: hidden; opacity: 0; transform: translateY(100%); touch-action: pan-y;
+  transition: transform var(--dur-3) var(--ease-ios-out), opacity var(--dur-3) var(--ease-ios-out), visibility 0s linear var(--dur-3); }
+.peek-stage[data-peek="open"] .peek-layer { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
+.peek-stage[data-snap="1"] .peek-layer { transition: none; }
+.peek-grip { flex: none; align-self: center; width: 36px; height: 4px; margin-top: 8px; border-radius: 99px; background: rgb(255 255 255 / .45); }
+.peek-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px 0; }
+.peek-scroll { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 8px 16px 16px; }
+.peek-text { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: rgb(255 255 255 / .92); }
+.peek-layer .peek-copy { border: 0 !important; background: rgb(255 255 255 / .16) !important; color: #fff !important; }
+.peek-layer .btn:not(.peek-copy) { border: 0 !important; background: rgb(255 255 255 / .14) !important; color: #fff !important; }
+.peek-layer .seg { background: rgb(255 255 255 / .12) !important; }
+.peek-layer .seg button { color: rgb(255 255 255 / .8) !important; }
+.peek-layer .seg button[data-on="1"] { background: rgb(255 255 255 / .92) !important; color: #111 !important; }
+.peek-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.peek-actions .btn { flex: 1 1 140px; }
+
