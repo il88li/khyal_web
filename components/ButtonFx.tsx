@@ -1,11 +1,11 @@
 "use client";
-// components/ButtonFx.tsx — تفاعل الأزرار الأساسية (.btn-primary): بقعة ضوء تتبّع الفأرة (سطح المكتب) + موجة عند اللمس/النقر.
+// components/ButtonFx.tsx — تفاعل كل الأزرار (.btn): بقعة ضوء تتبّع الفأرة (سطح المكتب) + موجة عند اللمس/النقر.
 // مستمع واحد مفوَّض على document بلا مكتبة ولا إعادة رسم React؛ التأثير نفسه بـ CSS (app/clean.css) خلف النص فلا يغطيه.
 // يحترم تخفيف الحركة (تفضيل النظام وخيار التطبيق والأجهزة الضعيفة) عبر motionAllowed().
 import { useEffect } from "react";
 import { motionAllowed } from "@/lib/cardFx";
 
-const SEL = ".btn-primary:not(:disabled):not([aria-busy=\"true\"])";
+const SEL = ".btn:not(:disabled):not([aria-busy=\"true\"])";
 const find = (t: EventTarget | null) => (t instanceof Element ? (t.closest(SEL) as HTMLElement | null) : null);
 
 export default function ButtonFx() {
@@ -20,6 +20,7 @@ export default function ButtonFx() {
       b.classList.remove("fx-rip");
       void b.offsetWidth; // يعيد تشغيل الحركة عند النقر المتكرر
       b.classList.add("fx-rip");
+      if (e.pointerType !== "mouse") navigator.vibrate?.(6);
     };
     const move = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
