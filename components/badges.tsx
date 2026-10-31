@@ -35,8 +35,8 @@ export function Tier1ShieldIcon({ size = 18, className = "" }: { size?: number; 
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`inline-block drop-shadow-sm ${className}`} aria-hidden="true">
       <defs>
         <linearGradient id="kh_t1_grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#38bdf8" />
-          <stop offset="100%" stopColor="#0284c7" />
+          <stop offset="0%" stopColor="rgb(var(--info))" />
+          <stop offset="100%" stopColor="rgb(var(--info-ink))" />
         </linearGradient>
       </defs>
       {/* درع انسيابي مصقول */}
@@ -47,13 +47,13 @@ export function Tier1ShieldIcon({ size = 18, className = "" }: { size?: number; 
       {/* لمعان خفيف في الجزء العلوي */}
       <path
         d="M12 4c-3.5 1.2-5.7 1.8-6.5 2.1v4c0 3.8 2.5 7.4 6.5 8.7 4-1.3 6.5-4.9 6.5-8.7v-4C17.7 5.8 15.5 5.2 12 4z"
-        fill="white"
+        fill="rgb(var(--on-accent))"
         fillOpacity="0.16"
       />
       {/* علامة التحقق */}
       <path
         d="M8.2 12.3l2.6 2.6 5.4-5.4"
-        stroke="#ffffff"
+        stroke="rgb(var(--on-accent))"
         strokeWidth="2.3"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -67,13 +67,13 @@ export function Tier2StarIcon({ size = 19, className = "" }: { size?: number; cl
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`inline-block drop-shadow-sm ${className}`} aria-hidden="true">
       <defs>
         <linearGradient id="kh_t2_grad" x1="1" y1="1" x2="23" y2="23" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#fef08a" />
-          <stop offset="35%" stopColor="#f59e0b" />
-          <stop offset="100%" stopColor="#b45309" />
+          <stop offset="0%" stopColor="rgb(var(--gold) / .62)" />
+          <stop offset="35%" stopColor="rgb(var(--gold))" />
+          <stop offset="100%" stopColor="rgb(var(--gold-ink))" />
         </linearGradient>
         <linearGradient id="kh_t2_sheen" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="0%" stopColor="rgb(var(--on-accent))" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="rgb(var(--on-accent))" stopOpacity="0" />
         </linearGradient>
       </defs>
       {/* نجمة ذهبية ذات 8 أطراف مسننة فاخرة */}
@@ -86,7 +86,7 @@ export function Tier2StarIcon({ size = 19, className = "" }: { size?: number; cl
       {/* علامة التحقق البارزة */}
       <path
         d="M8.3 12.2l2.6 2.6 5.3-5.3"
-        stroke="#ffffff"
+        stroke="rgb(var(--on-accent))"
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -99,17 +99,17 @@ export function Tier3DiamondIcon({ size = 20, className = "" }: { size?: number;
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       {/* هالة إشعاعية متوهجة للمرحلة الماسية */}
-      <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 opacity-40 blur-[2px] animate-pulse" />
+      <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[rgb(var(--accent-warm))] via-[rgb(var(--brand))] to-[rgb(var(--brand-lo))] opacity-40 blur-[2px] animate-pulse" />
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="relative drop-shadow-md" aria-hidden="true">
         <defs>
           <linearGradient id="kh_t3_grad" x1="1" y1="1" x2="23" y2="23" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#e879f9" />
-            <stop offset="45%" stopColor="#9333ea" />
-            <stop offset="100%" stopColor="#6366f1" />
+            <stop offset="0%" stopColor="rgb(var(--accent-warm))" />
+            <stop offset="45%" stopColor="rgb(var(--brand))" />
+            <stop offset="100%" stopColor="rgb(var(--brand-lo))" />
           </linearGradient>
           <linearGradient id="kh_t3_facet" x1="3" y1="3" x2="21" y2="12" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.75" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="rgb(var(--on-accent))" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="rgb(var(--on-accent))" stopOpacity="0.05" />
           </linearGradient>
         </defs>
         {/* معين ماسي ملكي سداسي الحواف مع تاج إشعاعي */}
@@ -125,12 +125,12 @@ export function Tier3DiamondIcon({ size = 20, className = "" }: { size?: number;
         {/* علامة التحقق الماسية مع نجمة إشعاع */}
         <path
           d="M8.2 12.3l2.6 2.6 5.4-5.4"
-          stroke="#ffffff"
+          stroke="rgb(var(--on-accent))"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="12" cy="4.5" r="1" fill="#ffffff" />
+        <circle cx="12" cy="4.5" r="1" fill="rgb(var(--on-accent))" />
       </svg>
     </div>
   );

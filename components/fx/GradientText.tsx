@@ -42,7 +42,7 @@ const TAU = Math.PI * 2;
 
 export default function GradientText({
   children,
-  colors = ['#5227FF', '#FF9FFC', '#B497CF'],
+  colors = ['rgb(var(--brand))', 'rgb(var(--accent-warm))', 'rgb(var(--accent-mint))'],
   animationSpeed = 8,
   variant = 'linear',
   angle = 90,
@@ -60,7 +60,7 @@ export default function GradientText({
   const rootRef = useRef<HTMLSpanElement>(null);
   const settingsRef = useRef<Settings | null>(null);
   const wakeRef = useRef<(() => void) | null>(null);
-  const palette = colors.length > 1 ? colors : [colors[0] ?? '#ffffff', colors[0] ?? '#ffffff'];
+  const palette = colors.length > 1 ? colors : [colors[0] ?? 'rgb(var(--brand))', colors[0] ?? 'rgb(var(--brand))'];
 
   settingsRef.current = {
     colors: palette,

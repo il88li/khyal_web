@@ -328,9 +328,9 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         >
           <span aria-hidden className="glass-h-fallback" />
           <div className="glass-h-body">
-            {p.title && <p className="text-base font-bold text-white">{p.title}</p>}
+            {p.title && <p className="text-base font-bold text-onMedia">{p.title}</p>}
             <div className="prompt-scroll prompt-text-scroll">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-onMedia/90">
                 {revealEnabled ? shown : gate.shown}{!revealEnabled && gate.locked && "…"}
               </p>
             </div>

@@ -12,7 +12,7 @@ export const TIERS_META = [
     subtitle: "المرحلة الأولى · إثبات الهوية والنشاط الأولي",
     description: "شارة الدرع السماوي اللامع تؤكد هوية المنشئ واكتمال ملفه الشخصي وبدء مساهمته الفاعلة في مجتمع خيال.",
     badgeType: "shield" as const,
-    accentColor: "#0284c7",
+    accentColor: "rgb(var(--info-ink))",
     themeClass: "from-sky-500 to-cyan-600 text-sky-700 bg-sky-50 border-sky-200",
     goals: {
       profilePct: 100,
@@ -38,7 +38,7 @@ export const TIERS_META = [
     subtitle: "المرحلة الثانية · الجودة والتأثير المستمر",
     description: "شارة النجمة الذهبية الفاخرة تُمنح لصنّاع المحتوى الذين حققوا تفاعلاً عالياً ومحتوى متجدداً يحظى بثقة واسعة.",
     badgeType: "star" as const,
-    accentColor: "#d97706",
+    accentColor: "rgb(var(--gold-ink))",
     themeClass: "from-amber-500 to-yellow-600 text-amber-800 bg-amber-50 border-amber-200",
     goals: {
       profilePct: 100,
@@ -64,7 +64,7 @@ export const TIERS_META = [
     subtitle: "المرحلة الثالثة · أعلى درجات الموثوقية والشراكة",
     description: "الشارة الماسية الملكية المتوهجة بتدرجات بنفسجي خيال، تُمثل نخبة المبدعين والشركاء الأساسيين الذين يقودون الإبداع في المنصة.",
     badgeType: "diamond" as const,
-    accentColor: "#7c3aed",
+    accentColor: "rgb(var(--brand))",
     themeClass: "from-purple-600 via-fuchsia-600 to-pink-500 text-purple-900 bg-purple-50 border-purple-200",
     goals: {
       profilePct: 100,

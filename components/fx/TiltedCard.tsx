@@ -93,9 +93,9 @@ const GLARE_STYLE: CSSProperties = {
 const EDGE_STYLE: CSSProperties = {
   background:
     'radial-gradient(farthest-side circle at var(--tc-gx, 50%) var(--tc-gy, 50%), rgba(var(--tc-glare-rgb, 255, 255, 255), calc(var(--tc-glare, 0) * 0.85)) 0%, rgba(var(--tc-glare-rgb, 255, 255, 255), calc(var(--tc-glare, 0) * 0.71)) 18%, rgba(var(--tc-glare-rgb, 255, 255, 255), calc(var(--tc-glare, 0) * 0.43)) 36%, rgba(var(--tc-glare-rgb, 255, 255, 255), calc(var(--tc-glare, 0) * 0.16)) 54%, rgba(var(--tc-glare-rgb, 255, 255, 255), calc(var(--tc-glare, 0) * 0.02)) 72%, rgba(var(--tc-glare-rgb, 255, 255, 255), 0) 85%)',
-  WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+  WebkitMask: 'linear-gradient(rgb(0 0 0) 0 0) content-box, linear-gradient(rgb(0 0 0) 0 0)',
   WebkitMaskComposite: 'xor',
-  mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)'
+  mask: 'linear-gradient(rgb(0 0 0) 0 0) content-box exclude, linear-gradient(rgb(0 0 0) 0 0)'
 };
 
 
@@ -166,7 +166,7 @@ const TiltedCard = ({
   perspective = 800,
   smoothness = 0.6,
   glare = 0.5,
-  glareColor = '#ffffff',
+  glareColor = 'rgb(var(--on-media))',
   shadow = 0.5,
   parallax = 1,
   axis = 'both',
@@ -680,7 +680,7 @@ const TiltedCard = ({
       {showTooltip && captionText && (
         <figcaption
           ref={captionRef}
-          className="pointer-events-none absolute left-0 top-0 z-[3] ml-3.5 mt-4 whitespace-nowrap rounded-[7px] bg-white px-[9px] py-[5px] text-[12px] font-medium leading-4 text-[#18181b] opacity-0 shadow-[0_0_0_1px_rgba(24,24,27,0.08),0_8px_18px_-8px_rgba(0,0,0,0.45)] [transform-origin:0_0] will-change-[transform,opacity]"
+          className="pointer-events-none absolute left-0 top-0 z-[3] ml-3.5 mt-4 whitespace-nowrap rounded-[7px] bg-snow px-[9px] py-[5px] text-[12px] font-medium leading-4 text-charcoal opacity-0 shadow-soft [transform-origin:0_0] will-change-[transform,opacity]"
         >
           {captionText}
         </figcaption>

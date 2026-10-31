@@ -34,6 +34,17 @@ export default {
       "info-tint": "rgb(var(--info-tint) / <alpha-value>)",
       danger: "rgb(var(--danger) / <alpha-value>)",
       "danger-tint": "rgb(var(--danger-tint) / <alpha-value>)",
+
+      // ── لمسات Gen Z (إضافة فقط): خلفية دافئة ولمستان + ألوان الوسائط/الطبقات ──
+      bg: "rgb(var(--c-bg) / <alpha-value>)",
+      accentWarm: "rgb(var(--accent-warm) / <alpha-value>)",
+      "accent-warm": "rgb(var(--accent-warm) / <alpha-value>)",
+      accentMint: "rgb(var(--accent-mint) / <alpha-value>)",
+      "accent-mint": "rgb(var(--accent-mint) / <alpha-value>)",
+      onMedia: "rgb(var(--on-media) / <alpha-value>)",
+      "on-media": "rgb(var(--on-media) / <alpha-value>)",
+      "on-accent": "rgb(var(--on-accent) / <alpha-value>)",
+      scrim: "rgb(var(--scrim) / <alpha-value>)",
     },
 
     // ── سلم الخطوط المعتمد: sm 12 · base 14 · lg 16 · xl 20 · 2xl 24 (لا 3xl+، السقف 32px) ──
@@ -56,6 +67,7 @@ export default {
       md: "12px",
       lg: "16px",
       link: "16px",
+      genz: "24px",
       xl: "20px",
       "2xl": "20px",
       "3xl": "28px",
@@ -73,13 +85,17 @@ export default {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
+        // خط العناوين الكبيرة (Display): تجوال المحمَّل أصلًا — بلا تحميل إضافي
+        display: ["var(--font-display)", "Tajawal", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
       },
       transitionTimingFunction: {
         out: "cubic-bezier(.2,.8,.3,1)",
         ios: "cubic-bezier(0.32,0.72,0,1)",
         "ios-out": "cubic-bezier(0.16,1,0.3,1)",
+        // ease-spring — نفس منحنى --ease-spring في globals.css
+        spring: "cubic-bezier(.34, 1.56, .64, 1)",
       },
-      transitionDuration: { "ios-1": "150ms", "ios-2": "250ms", "ios-3": "350ms", "ios-4": "500ms" },
+      transitionDuration: { fast: "150ms", slow: "320ms", "ios-1": "150ms", "ios-2": "250ms", "ios-3": "350ms", "ios-4": "500ms" },
 
       // ── توكنز iOS (المرحلة 1): إضافية فقط وبأسماء ios-* كي لا تُغيّر أي صنف قائم ──
       borderRadius: { "ios-sm": "10px", "ios-md": "14px", "ios-lg": "20px", "ios-xl": "28px", "ios-pill": "999px" },

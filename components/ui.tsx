@@ -61,7 +61,7 @@ export function BottomSheet({
             exit={{ opacity: 0 }}
             transition={{ duration: reduce ? 0.01 : 0.35, ease: IOS_OUT }}
             onClick={onClose}
-            className={`fixed inset-0 bg-black/40 ${layer === "top" ? "z-[70]" : "z-50"}`}
+            className={`fixed inset-0 bg-[rgb(var(--scrim)/.4)] ${layer === "top" ? "z-[70]" : "z-50"}`}
           />
           <motion.div
             key="sh"
@@ -134,7 +134,7 @@ export function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(var(--scrim)/.4)] p-4"
         >
           <motion.div
             role="dialog"
@@ -321,7 +321,7 @@ export function Lightbox({
       <motion.div
         style={{ opacity: fade }}
         onClick={onClose}
-        className="absolute inset-0 bg-[rgb(18_18_16/.9)] backdrop-blur-xl"
+        className="absolute inset-0 bg-[rgb(var(--scrim)/.9)] backdrop-blur-xl"
       />
       <button
         onClick={onClose}

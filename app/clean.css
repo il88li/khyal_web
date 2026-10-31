@@ -5,7 +5,7 @@
 :root {
   --brand: 204 23 40; --brand-lo: 160 14 30; --brand-hi: 232 80 92;
   --brand-ink: 160 14 30; --brand-tint: 253 233 235; --on-brand: 255 255 255;
-  --c-fog: 247 248 251; --c-snow: 255 255 255; --c-mist: 238 240 246;
+  --c-fog: 250 246 240; --c-bg: 250 246 240; --c-snow: 255 255 255; --c-mist: 238 240 246;
   --c-ink: 18 20 28; --c-ink-2: 60 66 84; --c-ink-3: 104 112 132;
   --spring: cubic-bezier(.34, 1.56, .64, 1);
   --ease: cubic-bezier(.2, 0, 0, 1);
@@ -14,11 +14,11 @@
 html.dark {
   --brand: 214 40 54; --brand-lo: 176 31 44; --brand-hi: 240 110 118;
   --brand-ink: 255 138 146; --brand-tint: 64 22 28;
-  --c-fog: 18 18 18; --c-snow: 27 28 33; --c-mist: 38 40 48;
+  --c-fog: 23 21 18; --c-bg: 23 21 18; --c-snow: 27 28 33; --c-mist: 38 40 48;
   --c-ink: 238 241 248; --c-ink-2: 201 207 221; --c-ink-3: 154 163 184;
   --float: 0 16px 40px -12px rgb(0 0 0 / .6);
 }
-body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-serif; font-size: 14px; line-height: 1.7; letter-spacing: .01em; background: rgb(var(--c-fog)); }
+body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-serif; font-size: 14px; line-height: 1.7; letter-spacing: .01em; background: rgb(var(--c-bg)); }
 
 /* ── إزالة الحدود والظلال الزخرفية: التجميع بالمسافة والتباين ── */
 .border-silver, .border-line, .border-mist, .border-fog { border-color: transparent !important; }
@@ -229,7 +229,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
 .glass-h::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgb(0 0 0 / .4); box-shadow: inset 0 1px 0 rgb(255 255 255 / .12); }
 .glass-h-body { display: flex; min-width: 0; flex-direction: column; gap: 8px; padding: 16px; }
 .glass-h-text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
-  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent); }
+  -webkit-mask-image: linear-gradient(to left, rgb(0 0 0) calc(100% - 24px), transparent); mask-image: linear-gradient(to left, rgb(0 0 0) calc(100% - 24px), transparent); }
 
 /* بطاقة نص البرومبت: ارتفاع ثابت مع تمرير داخلي — في الفيد ومعاينة الصورة */
 .prompt-text-card { cursor: pointer; }
@@ -237,7 +237,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
 .prompt-text-scroll { max-height: 148px; overflow-y: auto; overscroll-behavior: contain; padding-inline-end: 4px; }
 .prompt-text-scroll--sm { max-height: 92px; }
 .glass-h-body--sm { gap: 6px; padding: 12px 14px; }
-.prompt-lock-note--glass { background: rgb(255 255 255 / .18) !important; color: #fff !important; }
+.prompt-lock-note--glass { background: rgb(var(--on-media) / .18) !important; color: rgb(var(--on-media)) !important; }
 
 /* الشعار الجديد: بلا إطار أو خلفية */
 .brand-mark { background: transparent !important; border: 0 !important; box-shadow: none !important; }
@@ -434,7 +434,7 @@ button.pstat:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offse
 @keyframes peek-pulse { 0%, 100% { opacity: 1; transform: translateY(0); } 50% { opacity: .6; transform: translateY(2px); } }
 
 .peek-layer { position: absolute; inset-inline: 0; bottom: 0; z-index: 3; display: flex; flex-direction: column; max-height: var(--peek-maxh, 70dvh); outline: none;
-  border-radius: 28px 28px 16px 16px; color: #fff; background: rgb(14 16 24 / .66);
+  border-radius: 28px 28px 16px 16px; color: rgb(var(--on-media)); background: rgb(var(--scrim) / .66);
   -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 -8px 32px rgba(0,0,0,.12);
   visibility: hidden; opacity: 0; transform: translateY(100%); touch-action: pan-y;
   transition: transform var(--dur-3) var(--ease-ios-out), opacity var(--dur-3) var(--ease-ios-out), visibility 0s linear var(--dur-3); }
@@ -444,11 +444,11 @@ button.pstat:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offse
 .peek-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px 0; }
 .peek-scroll { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 8px 16px 16px; }
 .peek-text { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: rgb(255 255 255 / .92); }
-.peek-layer .peek-copy { border: 0 !important; background: rgb(255 255 255 / .16) !important; color: #fff !important; }
-.peek-layer .btn:not(.peek-copy) { border: 0 !important; background: rgb(255 255 255 / .14) !important; color: #fff !important; }
+.peek-layer .peek-copy { border: 0 !important; background: rgb(var(--on-media) / .16) !important; color: rgb(var(--on-media)) !important; }
+.peek-layer .btn:not(.peek-copy) { border: 0 !important; background: rgb(var(--on-media) / .14) !important; color: rgb(var(--on-media)) !important; }
 .peek-layer .seg { background: rgb(255 255 255 / .12) !important; }
 .peek-layer .seg button { color: rgb(255 255 255 / .8) !important; }
-.peek-layer .seg button[data-on="1"] { background: rgb(255 255 255 / .92) !important; color: #111 !important; }
+.peek-layer .seg button[data-on="1"] { background: rgb(var(--on-media) / .92) !important; color: rgb(var(--scrim)) !important; }
 .peek-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .peek-actions .btn { flex: 1 1 140px; }
 

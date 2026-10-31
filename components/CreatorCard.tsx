@@ -47,7 +47,7 @@ function FxTitle({ fx, name, dark }: { fx: CardFx["name"]; name: string; dark: b
     return <DecryptedText text={name} animateOn="view" sequential effect="scramble" speed={45} useOriginalCharsOnly className={`${cls} text-charcoal`} parentClassName="text-charcoal" />;
   if (fx === "gradient")
     return (
-      <GradientText colors={[dark ? "#FF8A92" : "#A00E1E", dark ? "#D62836" : "#CC1728"]} animationSpeed={7} variant="linear" glow={0} className={cls}>
+      <GradientText colors={["rgb(var(--brand-ink))", "rgb(var(--brand))"]} animationSpeed={7} variant="linear" glow={0} className={cls}>
         {name}
       </GradientText>
     );
@@ -107,7 +107,7 @@ export default function CreatorCard({ fx, profile, items = [], compact = false, 
   const eff = fx ?? { v: 1 as const, name: "none" as const, stats: "none" as const, bg: "none" as const, cards: "none" as const, prompts: [] };
   const dark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
   const colors = useMemo(
-    () => ({ brand: cssHex("--brand", "#CC1728"), mist: cssHex("--c-mist", "#EEF0F6"), ink: cssHex("--c-ink", "#12141C") }),
+    () => ({ brand: cssHex("--brand", "rgb(var(--brand))"), mist: cssHex("--c-mist", "rgb(var(--c-mist))"), ink: cssHex("--c-ink", "rgb(var(--c-ink))") }),
     [on, dark] // eslint-disable-line react-hooks/exhaustive-deps
   );
   const shown = items.slice(0, CARD_FX_MAX_PROMPTS);

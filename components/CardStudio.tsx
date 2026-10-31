@@ -124,7 +124,7 @@ export default function CardStudio() {
       </div>
 
       <button onClick={save} disabled={busy} className="btn btn-primary w-full">
-        {busy ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : "حفظ البطاقة"}
+        {busy ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-onMedia/40 border-t-onMedia" /> : "حفظ البطاقة"}
       </button>
     </div>
   );

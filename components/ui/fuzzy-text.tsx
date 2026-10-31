@@ -31,7 +31,7 @@ export function FuzzyText({
   fontSize = "clamp(2rem, 10vw, 10rem)",
   fontWeight = 900,
   fontFamily = "inherit",
-  color = "#fff",
+  color = "currentColor",
   enableHover = true,
   baseIntensity = 0.18,
   hoverIntensity = 0.5,

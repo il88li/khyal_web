@@ -143,11 +143,11 @@ function Preview({ p, start, onClose, a, onOpen }: { p: PromptRow; start: number
           onCopy={act.onCopy}
           lockNote={gate.locked && !open ? (
             <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1 text-caption text-white/80"><Lock size={16} />جزء من النص فقط</span>
-              <button onClick={() => setOpen(true)} className="btn btn-xs bg-white !text-black">عرض البرومبت كاملاً</button>
+              <span className="flex items-center gap-1 text-caption text-onMedia/80"><Lock size={16} />جزء من النص فقط</span>
+              <button onClick={() => setOpen(true)} className="btn btn-xs bg-onMedia !text-charcoal">عرض البرومبت كاملاً</button>
             </div>
           ) : open ? (
-            <button onClick={() => setOpen(false)} className="self-start text-caption font-medium text-white/80">إخفاء</button>
+            <button onClick={() => setOpen(false)} className="self-start text-caption font-medium text-onMedia/80">إخفاء</button>
           ) : null}
         >
         <div onClick={tap} className="max-h-[62dvh] w-full overflow-auto rounded-xl bg-mist touch-pan-x touch-pan-y touch-pinch-zoom [scrollbar-width:none]">

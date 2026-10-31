@@ -287,9 +287,9 @@ export default function PromptPeekLayer({
           {topExtra}
         </div>
         <div ref={scrollRef} className="peek-scroll">
-          {title && <p className="text-base font-bold text-white">{title}</p>}
+          {title && <p className="text-base font-bold text-onMedia">{title}</p>}
           <p className="peek-text">{promptText}</p>
-          {!!tags?.length && <div className="flex flex-wrap gap-1">{tags.map((t) => <span key={t} className="rounded-full bg-white/15 px-2 text-micro text-white">{t}</span>)}</div>}
+          {!!tags?.length && <div className="flex flex-wrap gap-1">{tags.map((t) => <span key={t} className="rounded-full bg-onMedia/15 px-2 text-micro text-onMedia">{t}</span>)}</div>}
           {lockNote}
           {acts}
         </div>

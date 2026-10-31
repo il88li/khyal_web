@@ -23,9 +23,9 @@ export const haptic = (ms = 8) => { try { navigator.vibrate?.(ms); } catch {} };
 /** هوية «khyal studio» بتأثير النص الضبابي (FuzzyText) — يقرأ لون النص من السمة تلقائياً */
 function FuzzyBrand({ size = 20 }: { size?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [color, setColor] = useState("#12141c");
+  const [color, setColor] = useState("rgb(var(--c-ink))");
   useEffect(() => {
-    const read = () => { if (ref.current) setColor(getComputedStyle(ref.current).color || "#12141c"); };
+    const read = () => { if (ref.current) setColor(getComputedStyle(ref.current).color || "rgb(var(--c-ink))"); };
     read();
     const mo = new MutationObserver(read);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });

@@ -72,8 +72,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F8FB" },
-    { media: "(prefers-color-scheme: dark)", color: "#121212" },
+    { media: "(prefers-color-scheme: light)", color: "#FAF6F0" },
+    { media: "(prefers-color-scheme: dark)", color: "#171512" },
   ],
 };
 
@@ -83,7 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: INIT }} />
       </head>
-      <body className="min-h-dvh overflow-x-hidden font-sans text-base text-charcoal">
+      <body className="grain min-h-dvh overflow-x-hidden font-sans text-base text-charcoal">
         <div className="aurora" aria-hidden />
         <Splash />
         <Providers>

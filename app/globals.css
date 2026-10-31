@@ -9,34 +9,46 @@
 :root {
   color-scheme: light;
 
-  /* ── الخط: «زنجبيل» إن توفّر مرخّصاً، ثم «تجوال» (أقرب بديل مجاني)، ثم IBM Plex ── */
-  --font-sans: "Zanjabeel", "Zanjabil", var(--font-tajawal), var(--font-plex), "IBM Plex Sans Arabic", system-ui, sans-serif;
+  /* ── الخطوط: IBM Plex Sans Arabic للنصوص، وتجوال (Display) للعناوين الكبيرة ── */
+  --font-sans: "Zanjabeel", var(--font-plex), "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-display: "Zanjabeel Display", var(--font-tajawal), "Tajawal", var(--font-plex), "IBM Plex Sans Arabic", system-ui, sans-serif;
 
   /* ── لوحة التصميم المرفقة: الأدوار الأساسية ── */
-  --c-fog: 251 253 255;          /* #FBFDFF — background */
+  --c-fog: 250 246 240;          /* عاجي دافئ — خلفية الصفحة */
   --c-snow: 255 255 255;
-  --c-mist: 245 245 245;         /* #F5F5F5 — surfaceVariant */
-  --c-line: 224 224 224;         /* #E0E0E0 — outline */
-  --c-line-soft: 238 238 238;    /* #EEEEEE — outlineVariant */
+  --c-mist: 245 245 245;         /* سطح ثانوي */
+  --c-line: 224 224 224;         /* فاصل */
+  --c-line-soft: 238 238 238;    /* فاصل ناعم */
 
   /* ── النص ── */
-  --c-ink: 28 27 31;             /* #1C1B1F */
-  --c-ink-2: 73 69 79;           /* #49454F */
+  --c-ink: 28 27 31;             /* حبر أساسي */
+  --c-ink-2: 73 69 79;           /* حبر ثانوي */
   --c-ink-3: 121 116 126;
   --c-ash: 158 158 158;
 
   /* ── الهوية: بنفسجي خيال ── */
   --brand: 204 23 40;
-  --brand-hi: 126 102 185;
-  --brand-lo: 79 55 139;
+  --brand-hi: 232 80 92;
+  --brand-lo: 160 14 30;
   --brand-ink: 160 14 30;
-  --brand-tint: 234 221 255;     /* #EADDFF */
+  --brand-tint: 253 233 235;     /* تظليل الهوية (مشتق من الأحمر) */
   --on-brand: 255 255 255;
 
   /* ── اللون الثانوي واللمسة الوردية ── */
-  --secondary: 125 82 96;        /* #7D5260 */
-  --secondary-tint: 255 216 228; /* #FFD8E4 */
-  --tertiary: 255 182 185;       /* #FFB6B9 */
+  --secondary: 125 82 96;        /* لمسة ثانوية */
+  --secondary-tint: 255 216 228;
+  --tertiary: 255 182 185;
+
+  /* ── لمسات Gen Z (إضافة فقط): خلفية دافئة + لمستان + ألوان الطبقات والوسائط ── */
+  --c-bg: 250 246 240;           /* خلفية دلالية (فاتح = عاجي دافئ) */
+  --accent-warm: 226 122 68;     /* برتقالي دافئ */
+  --accent-mint: 126 209 178;    /* أخضر نعناعي فاتح */
+  --on-media: 255 255 255;       /* نص فوق الوسائط (ثابت في الوضعين) */
+  --on-accent: 255 255 255;
+  --scrim: 22 19 16;             /* تعتيم خلف النوافذ */
+  --grain-opacity: .035;         /* حبيبات 3.5% — قابلة للإيقاف */
+  --dur-fast: 150ms; --dur-slow: 320ms;
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
 
   /* ── الحالات الدلالية ── */
   --ok: 76 175 80;       --ok-ink: 46 125 50;      --ok-tint: 232 245 233;
@@ -71,7 +83,12 @@
 html.dark {
   color-scheme: dark;
 
-  --c-fog: 18 18 18;             /* #121212 */
+  --c-fog: 23 21 18;             /* فحمي دافئ */
+  --c-bg: 23 21 18;
+  --accent-warm: 255 171 122;
+  --accent-mint: 152 232 201;
+  --scrim: 8 7 6;
+  --grain-opacity: .045;
   --c-snow: 27 28 33;
   --c-mist: 36 38 46;
   --c-line: 58 61 71;
@@ -116,7 +133,7 @@ html.dark {
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
-  background: rgb(var(--c-fog));
+  background: rgb(var(--c-bg));
   scroll-behavior: smooth;
 }
 @media (max-width: 349px) {
@@ -147,6 +164,8 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 img { -webkit-user-drag: none; max-width: 100%; }
 
 h1, h2, h3 { text-wrap: balance; letter-spacing: -.01em; }
+/* خط Display للعناوين الكبيرة فقط — النصوص تبقى IBM Plex Sans Arabic */
+h1, .display { font-family: var(--font-display); letter-spacing: -.02em; }
 p { text-wrap: pretty; overflow-wrap: anywhere; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
@@ -195,6 +214,25 @@ button:disabled { cursor: not-allowed; }
 }
 .aurora::before {
   display: none;
+}
+
+/* ── طبقة الحبيبات (grain) — ثابتة فوق الواجهة بنسبة 3.5–4.5%
+   الإيقاف: html[data-grain="off"]، أو تلقائيًا مع prefers-reduced-transparency. */
+body.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: var(--grain-opacity, .035);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: multiply;
+}
+html.dark body.grain::after { mix-blend-mode: screen; }
+html[data-grain="off"] body.grain::after { display: none; }
+@media (prefers-reduced-transparency: reduce) {
+  body.grain::after { display: none; }
 }
 
 @layer components {
@@ -1057,8 +1095,8 @@ html.dark .field:focus { background:
 
 /* معاينة البرومبت: تلاشٍ على الجهة اليمنى */
 .prompt-card-copy {
-  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent);
-  mask-image: linear-gradient(to left, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to left, rgb(0 0 0) calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to left, rgb(0 0 0) calc(100% - 24px), transparent);
 }
 
 /* شعار الافتتاح: طفو ثلاثي الأبعاد */
@@ -1149,8 +1187,8 @@ html.dark .field:focus { background:
     linear-gradient(rgb(var(--c-ink) / .05) 1px, transparent 1px),
     linear-gradient(90deg, rgb(var(--c-ink) / .05) 1px, transparent 1px);
   background-size: 24px 24px;
-  -webkit-mask-image: radial-gradient(130% 130% at 100% 0%, #000 18%, transparent 76%);
-  mask-image: radial-gradient(130% 130% at 100% 0%, #000 18%, transparent 76%);
+  -webkit-mask-image: radial-gradient(130% 130% at 100% 0%, rgb(0 0 0) 18%, transparent 76%);
+  mask-image: radial-gradient(130% 130% at 100% 0%, rgb(0 0 0) 18%, transparent 76%);
 }
 .prompt-cover-orb {
   position: absolute;
@@ -1282,7 +1320,7 @@ html.dark .prompt-cover-badge { background: rgb(255 255 255 / .1); }
   flex-direction: column;
   gap: 3px;
   padding: 14px;
-  color: #fff;
+  color: rgb(var(--on-media));
   opacity: 0;
   transform: translateY(6px);
   transition: opacity .3s var(--ease), transform .3s var(--ease);
