@@ -1020,7 +1020,7 @@ textarea.field { min-height: 100px; border-radius: 16px !important; padding-bloc
 .prompt-card-counts a { color: rgb(var(--brand)); font-weight: 600; }
 .prompt-card-footer { display: flex; flex-direction: column; gap: 11px; border-top: 1px solid rgb(var(--c-line-soft) / .85); padding: 12px 18px 16px; }
 .prompt-social-row { display: flex; min-height: 36px; align-items: center; gap: 4px; }
-.prompt-social-action, .prompt-social-icon { display: inline-flex; min-width: 42px; min-height: 36px; align-items: center; justify-content: center; gap: 5px; border-radius: 9999px; padding-inline: 9px; color: rgb(var(--c-ink-2)); font-size: 11px; transition: background-color 150ms ease, color 150ms ease, transform 150ms ease; }
+.prompt-social-action, .prompt-social-icon { display: inline-flex; min-width: 42px; min-height: 36px; align-items: center; justify-content: center; gap: 5px; border-radius: 9999px; padding-inline: 9px; color: rgb(var(--c-ink-2)); font-size: 11px; transition: background-color 150ms ease, color 150ms ease; }
 .prompt-social-action:hover, .prompt-social-icon:hover { background: rgb(var(--c-mist)); color: rgb(var(--brand)); }
 .prompt-social-action:active, .prompt-social-icon:active { transform: scale(.96); }
 .prompt-social-action.is-active { color: rgb(var(--brand)); }

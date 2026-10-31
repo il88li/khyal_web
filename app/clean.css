@@ -77,7 +77,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans Arabic", system-ui, sans-se
     background-color .2s var(--ease),
     color .2s var(--ease),
     opacity .2s var(--ease),
-    transform .5s var(--spring);
+    transform .18s var(--ease);
 }
 .btn:hover:not(:disabled):not([aria-busy="true"]) { background: var(--btn-bg-hover); }
 .btn:not(:disabled):not([aria-busy="true"]):active { transform: scale(.97); }

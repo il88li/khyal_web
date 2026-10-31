@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ago, burst, extractVars, fillVars, sb, thumb, toast, uid, type Tone } from "@/lib/supabase";
+import { haptic } from "@/lib/motion";
 import { challengeOf } from "@/types";
 import type { Img } from "@/types";
 
@@ -59,7 +60,7 @@ export function BottomSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reduce ? 0.01 : 0.35, ease: IOS_OUT }}
+            transition={{ duration: reduce ? 0.01 : 0.2, ease: IOS_OUT }}
             onClick={onClose}
             className={`fixed inset-0 bg-[rgb(var(--scrim)/.4)] ${layer === "top" ? "z-[70]" : "z-50"}`}
           />
@@ -77,7 +78,7 @@ export function BottomSheet({
             initial={reduce ? { opacity: 0 } : { y: "100%" }}
             animate={reduce ? { opacity: 1 } : { y: 0 }}
             exit={reduce ? { opacity: 0 } : { y: "100%" }}
-            transition={{ duration: reduce ? 0.01 : 0.35, ease: IOS_OUT }}
+            transition={reduce ? { duration: 0.01 } : { type: "spring", duration: 0.32, bounce: 0.08 }}
             className={`fixed inset-x-0 bottom-0 ${layer === "top" ? "z-[70]" : "z-50"} mx-auto max-h-[70vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-ios-xl bg-snow shadow-ios-sheet`}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
@@ -224,18 +225,20 @@ export function CopyButton({
   className?: string;
 }) {
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 0.18 }}
       onClick={async () => {
         if (onCopy) { await onCopy(); return; }
+        haptic(10);
         await navigator.clipboard.writeText(text);
-        navigator.vibrate?.(10);
         toast("نُسخ البرومبت");
       }}
-      className={`btn min-h-touch rounded-ios-pill px-ios-4 transition-[transform,background-color,color] duration-ios-2 ease-ios active:scale-[.97] ${className}`}
+      className={`btn min-h-touch rounded-ios-pill px-ios-4 transition-[background-color,color] duration-ios-2 ease-ios ${className}`}
     >
       <Copy size={18} />
       {label}
-    </button>
+    </motion.button>
   );
 }
 
@@ -303,7 +306,7 @@ export function Lightbox({
     i: { offset: { y: number }; velocity: { y: number } },
   ) => {
     if (Math.abs(i.offset.y) > 120 || Math.abs(i.velocity.y) > 700) {
-      navigator.vibrate?.(10);
+      haptic(10);
       onClose();
     }
   };
@@ -537,7 +540,7 @@ export function Comments({ promptId }: { promptId: string }) {
     if (!me) return toast("سجّل الدخول أولاً");
     const id = crypto.randomUUID();
     setText("");
-    navigator.vibrate?.(8);
+    haptic(8);
     setItems((a) => [
       ...(a ?? []),
       {
@@ -742,7 +745,7 @@ export function VarsSheet({
             disabled={!ready}
             onClick={async () => {
               await navigator.clipboard.writeText(out);
-              navigator.vibrate?.(10);
+              haptic(10);
               toast("نُسخ البرومبت جاهزاً");
             }}
             className="btn btn-primary !min-h-10 flex-1 disabled:opacity-50"

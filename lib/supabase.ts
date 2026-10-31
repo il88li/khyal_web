@@ -58,7 +58,7 @@ export function burst(x: number, y: number, n = 12) {
     const el = document.createElement("span"), a = (Math.PI * 2 * i) / n + Math.random() * 0.5, d = 38 + Math.random() * 52;
     Object.assign(el.style, { position: "fixed", left: `${x}px`, top: `${y}px`, width: "8px", height: "8px", borderRadius: "9999px", background: colors[i % colors.length], pointerEvents: "none", zIndex: "90" });
     document.body.appendChild(el);
-    el.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d + 18}px) scale(.2)`, opacity: 0 }], { duration: 600 + Math.random() * 250, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => el.remove();
+    el.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d + 18}px) scale(.2)`, opacity: 0 }], { duration: 320, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => el.remove();
   }
 }
 

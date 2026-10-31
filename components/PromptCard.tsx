@@ -18,6 +18,7 @@ import { previewOf } from "@/lib/access";
 const ImagePreview = dynamic(() => import("./ImagePreview"), { ssr: false });
 import type { PromptRow } from "@/types";
 import { useTilt } from "@/lib/tilt";
+import { haptic, useCountUp } from "@/lib/motion";
 
 const REASONS = ["محتوى مسيء", "احتيال أو spam", "انتهاك حقوق", "أخرى"];
 
@@ -48,7 +49,7 @@ const invalidateFollowed = () => { followedSet = null; followedPromise = null; }
 
 /* حركات الدخول المتتابعة: تُقصَر على أول ظهور في الجلسة فقط */
 let entranceSeen = false;
-const MAX_STAGGER = 4, STEP = 0.05;
+const MAX_STAGGER = 4, STEP = 0.04;
 
 function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const tilt = useTilt(2); // ميل ≤ 2° بفأرة فقط
@@ -56,6 +57,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const [liked, setLiked] = useState(!!p.liked);
   const [saved, setSaved] = useState(!!p.saved);
   const [count, setCount] = useState(p.like_count);
+  const likes = useCountUp(count);
   const [pulse, setPulse] = useState(0);
   const [idx, setIdx] = useState(0);
   const [sheet, setSheet] = useState(false);
@@ -106,7 +108,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
         burst(r.left + r.width / 2, r.top + r.height / 2, 12);
       }
     } else setSaved(next);
-    navigator.vibrate?.(8);
+    haptic(10);
     const key = { user_id: id, prompt_id: p.id };
     const { error } = next
       ? await sb.from(table).insert(key)
@@ -126,7 +128,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
     setFollowBusy(true);
     const willFollow = !following;
     setFollowing(willFollow);
-    navigator.vibrate?.(8);
+    haptic(8);
     const key = { follower_id: me, following_id: p.author.id };
     const { error } = willFollow
       ? await sb.from("follows").insert(key)
@@ -167,6 +169,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
   const vars = extractVars(shown);
 
   const copy = async () => {
+    haptic(10);
     await copyText(shown);
     if (p.id !== "preview") sb.rpc("bump_copy", { p_id: p.id }).then(() => {}, () => {});
   };
@@ -198,9 +201,9 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
 
   return (
     <motion.article
-      initial={firstRun.current ? { opacity: 0, y: 16 } : false}
+      initial={firstRun.current ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 420, damping: 34, delay: firstRun.current ? Math.min(i, MAX_STAGGER) * STEP : 0 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: firstRun.current ? Math.min(i, MAX_STAGGER) * STEP : 0 }}
       className="prompt-card card"
       {...tilt}
     >
@@ -353,18 +356,18 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
 
       <footer className="prompt-card-footer">
         <div className="prompt-social-row" aria-label="التفاعل مع البرومبت">
-          <button ref={likeBtn} onClick={() => toggle("likes")} className={`prompt-social-action ${liked ? "is-active" : ""}`} aria-label={liked ? "إلغاء الإعجاب" : "إعجاب"} aria-pressed={liked}>
-            <motion.span key={pulse} animate={pulse ? { scale: [1, 1.3, 1] } : {}} transition={{ type: "spring", stiffness: 480, damping: 18 }}>
+          <motion.button ref={likeBtn} whileTap={{ scale: 0.96 }} transition={{ duration: 0.18 }} onClick={() => toggle("likes")} className={`prompt-social-action ${liked ? "is-active" : ""}`} aria-label={liked ? "إلغاء الإعجاب" : "إعجاب"} aria-pressed={liked}>
+            <motion.span key={pulse} animate={pulse ? { scale: [1, 1.25, 1] } : {}} transition={{ duration: 0.28, ease: "easeOut" }}>
               <Heart size={17} fill={liked ? "currentColor" : "none"} />
             </motion.span>
-            <span>{fmt(count)}</span>
-          </button>
+            <span>{fmt(likes)}</span>
+          </motion.button>
           <button onClick={() => p.id !== "preview" && setSheet(true)} className="prompt-social-action" aria-label="تعليقات">
             <MessageCircle size={17} /><span>{fmt(p.comment_count)}</span>
           </button>
-          <button onClick={() => toggle("saves")} className={`prompt-social-action ${saved ? "is-active" : ""}`} aria-label={saved ? "إلغاء الحفظ" : "حفظ"} aria-pressed={saved}>
+          <motion.button whileTap={{ scale: 0.96 }} transition={{ duration: 0.18 }} onClick={() => toggle("saves")} className={`prompt-social-action ${saved ? "is-active" : ""}`} aria-label={saved ? "إلغاء الحفظ" : "حفظ"} aria-pressed={saved}>
             <Bookmark size={17} fill={saved ? "currentColor" : "none"} />
-          </button>
+          </motion.button>
           <button onClick={share} className="prompt-social-icon" aria-label="مشاركة"><Share2 size={17} /></button>
           {!mine && p.id !== "preview" && (
             <button onClick={() => setRep(true)} className="prompt-social-icon" aria-label="خيارات المنشور">⋯</button>

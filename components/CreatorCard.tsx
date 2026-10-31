@@ -59,7 +59,7 @@ function FxStat({ fx, value, label }: { fx: CardFx["stats"]; value: number; labe
   return (
     <div className="flex min-w-0 flex-col items-center gap-0.5">
       <span className="text-lg font-bold tabular-nums text-charcoal">
-        {fx === "count" ? <CountUp to={value} duration={1.6} trigger="view" /> : value}
+        {fx === "count" ? <CountUp to={value} duration={0.4} trigger="view" /> : value}
       </span>
       <span className="text-caption text-smoke">{label}</span>
     </div>

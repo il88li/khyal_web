@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Award, BarChart3, BookMarked, Camera, Copy, FileText, Flame, Heart, Lock, Pencil, Settings, Share2, Trash2, UserPlus, Users } from "@/components/icons";
 import { VERSION, ago, explain, fmt, purgeImageFolder, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
+import { useCountUp } from "@/lib/motion";
 import { BottomSheet } from "@/components/ui";
 import { PromptCover } from "@/components/PromptCover";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
@@ -21,9 +22,10 @@ const SEL = "id,body,enhanced,images,like_count,comment_count,category_id,create
 
 /** بطاقة إحصاء صغيرة موحّدة (برومبتات/نسخ/متابعون/يتابعهم) — زر عند وجود onClick */
 function PStat({ icon, tone, value, label, onClick, title }: { icon: React.ReactNode; tone: string; value: number; label: string; onClick?: () => void; title?: string }) {
+  const shown = useCountUp(value);
   const body = (<>
     <span className={`pstat-i ${tone}`}>{icon}</span>
-    <span className="pstat-v">{fmt(value)}</span>
+    <span className="pstat-v">{fmt(shown)}</span>
     <span className="pstat-l">{label}</span>
   </>);
   return onClick
