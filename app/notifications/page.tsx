@@ -31,9 +31,9 @@ export default function Notifications() {
       {error ? <ErrorState message={error} onRetry={() => { setError(""); setItems(null); setRetry((value) => value + 1); }} /> : !items ? <Skeleton variant="list" count={5} />
         : !items.length ? <EmptyState icon={Bell} title="لا توجد إشعارات" hint="ستظهر هنا الإعجابات والمتابعات والتعليقات." />
         : items.map((n) => (
-          <button key={n.id} onClick={() => open(n)} className={`flex min-h-[76px] flex-col gap-1 rounded-xl border p-4 text-start active:opacity-70 ${n.read ? "border-silver bg-snow" : "border-brand/40 bg-brand-tint"}`}>
-            <span className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{n.title}</span><span className="shrink-0 text-caption text-smoke">{ago(n.created_at)}</span></span>
-            <span className="truncate text-sm text-graphite">{n.body}</span></button>))}
+          <button key={n.id} onClick={() => open(n)} className={`notification-item flex flex-col gap-1 rounded-xl border text-start active:opacity-70 ${n.read ? "" : ""}`} data-unread={n.read ? "0" : "1"}>
+            <span className="flex items-center justify-between gap-2"><span className="notification-title text-sm font-semibold">{n.title}</span><span className="shrink-0 text-caption text-smoke">{ago(n.created_at)}</span></span>
+            <span className="notification-body line-clamp-2 text-sm">{n.body}</span></button>))}
     </main>
   );
 }

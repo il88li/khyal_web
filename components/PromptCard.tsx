@@ -213,7 +213,7 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
               {vars.length ? (
                 <button onClick={() => { close(); setVsheet(true); }} className="btn prompt-use-cta"><Braces size={16} /><span>عبّئ المتغيرات</span></button>
               ) : (
-                <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn prompt-use-cta"><Sparkles size={16} /><span>جرّبه أو حسّنه</span></Link>
+                <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn prompt-use-cta"><Sparkles size={16} /><span>جرّبه الآن</span></Link>
               )}
             </div>
           )}
@@ -320,15 +320,13 @@ function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
           onCopy={copy}
           onComments={() => p.id !== "preview" && setSheet(true)}
         />
-        {!first && (
         <div className="prompt-cta-row">
           {vars.length ? (
-            <button onClick={() => setVsheet(true)} className="btn btn-primary prompt-use-cta w-full"><Braces size={17} /><span>استخدم هذا البرومبت</span></button>
+            <button onClick={() => setVsheet(true)} className="btn btn-primary prompt-use-cta w-full"><Braces size={17} /><span>{first ? "جرّبه الآن" : "استخدم هذا البرومبت"}</span></button>
           ) : (
-            <Link href={`/enhance?text=${encodeURIComponent(shown)}`} className="btn btn-primary prompt-use-cta w-full"><Sparkles size={17} /><span>استخدم هذا البرومبت</span></Link>
+            <Link href={`/enhance?text=${encodeURIComponent(shown)}`} className="btn btn-primary prompt-use-cta w-full"><Sparkles size={17} /><span>{first ? "جرّبه الآن" : "استخدم هذا البرومبت"}</span></Link>
           )}
         </div>
-        )}
       </footer>
 
       {/* ══════════════ النوافذ ══════════════ */}

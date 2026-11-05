@@ -241,14 +241,16 @@ export default function Profile() {
         </>}
       </div>
 
-      {/*2 — الأفاتار المركزي فوق الغلاف */}
-      <div className="profile-hero">
-        <PStat icon={<FileText size={15} />} tone="bg-brand-tint text-brand-ink" value={stats.prompts} label="برومبت" />
-        <PStat icon={<Copy size={15} />} tone="bg-info-tint text-info-ink" value={copies} label="نسخ" />
+      {/*2 — الأفاتار مستقل ثم صندوق الإحصائيات، بلا تداخل */}
+      <div className="profile-hero-avatar-wrap">
         <div className="profile-hero-avatar relative">
           <div className="avatar h-full w-full border-[4px] border-snow bg-brand-tint text-2xl text-brand-ink shadow-ios-card" data-i={(p?.display_name ?? "؟").slice(0, 1)}>{p?.avatar_url && <img src={p.avatar_url} alt="" />}</div>
           {own && <label className="absolute bottom-0 end-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-snow bg-brand text-snow shadow-pop active:scale-95">{up === "avatar_url" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-snow/40 border-t-snow" /> : <Camera size={17} />}<input type="file" accept="image/*" hidden onChange={(e) => change("avatar_url", e.target.files?.[0])} /></label>}
         </div>
+      </div>
+      <div className="profile-stats-grid" aria-label="إحصائيات الحساب">
+        <PStat icon={<FileText size={15} />} tone="bg-brand-tint text-brand-ink" value={stats.prompts} label="برومبت" />
+        <PStat icon={<Copy size={15} />} tone="bg-info-tint text-info-ink" value={copies} label="نسخ" />
         <PStat icon={<Users size={15} />} tone="bg-ok-tint text-ok-ink" value={stats.followers} label="المتابعون" onClick={() => openNet("followers")} title="عرض قائمة المتابعين" />
         <PStat icon={<UserPlus size={15} />} tone="bg-gold-tint text-gold-ink" value={stats.following} label="يتابعهم" onClick={() => openNet("following")} title="عرض الحسابات التي يتابعها" />
       </div>
@@ -285,11 +287,11 @@ export default function Profile() {
       )}
 
       {/*6 — الإجراءات: أساسي موسّط + ثانويتان */}
-      <div className="flex flex-wrap justify-center gap-2 px-4 pt-4">
+      <div className="profile-actions flex w-full flex-wrap justify-center gap-2 px-4 pt-4">
         {own ? (<>
-          <Link href="/settings" className="btn !min-h-9">تعديل الحساب</Link>
-          <Link href="/library" className="btn btn-ghost !min-h-9"><BookMarked size={18} />مكتبتي</Link>
-          <Link href="/stats" className="btn btn-ghost !min-h-9"><BarChart3 size={18} />إحصاءاتي</Link>
+          <Link href="/settings" className="btn flex-1 !min-h-9">تعديل الحساب</Link>
+          <Link href="/library" className="btn btn-ghost flex-1 !min-h-9"><BookMarked size={18} />مكتبتي</Link>
+          <Link href="/stats" className="btn btn-ghost flex-1 !min-h-9"><BarChart3 size={18} />إحصاءاتي</Link>
           <button onClick={shareProfile} aria-label="مشاركة الحساب" className="icon-btn border border-silver"><Share2 size={18} /></button>
           {badges && <button onClick={shareCard} aria-label="مشاركة صورة إنجاز" title="شارك صورة إنجازك" className="icon-btn border border-silver"><Award size={18} className="text-brand-ink" /></button>}
         </>) : (<>

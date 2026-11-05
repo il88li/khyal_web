@@ -1823,3 +1823,108 @@ button.pstat:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offse
 .glass, .glass-strong, .glass-h, .glass-h-body { background: rgb(var(--c-snow)); }
 .app-sidebar, .app-topbar, .mobile-bottomnav { background: rgb(var(--c-snow)); }
 .prompt-card { border-radius: 20px; }
+
+/* =============================================================
+   UI/UX hardening — mobile RTL and creator-first surfaces
+   This final layer intentionally overrides legacy visual experiments above.
+   ============================================================= */
+html { direction: rtl; }
+
+/* Fixed chrome: no floating pills; content always clears the bottom nav. */
+.app-topbar {
+  top: 0;
+  inset-inline: 0;
+  height: 66px;
+  border: 0;
+  border-bottom: 1px solid rgb(var(--c-line) / .8);
+  border-radius: 0;
+  background: rgb(var(--c-snow) / .98);
+  box-shadow: none;
+}
+.app-topbar-inner { height: 66px; min-height: 66px; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+.app-topbar[data-scrolled="1"] { box-shadow: 0 1px 0 rgb(var(--c-line) / .7); }
+.mobile-bottomnav {
+  inset-inline: 0;
+  bottom: 0;
+  border: 0;
+  border-top: 1px solid rgb(var(--c-line) / .9);
+  border-radius: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgb(var(--c-snow));
+  box-shadow: none;
+}
+.mobile-bottomnav ul { height: 72px; min-height: 72px; padding-inline: 8px; }
+.mobile-bottomnav a { color: rgb(var(--c-ink-3)); outline: 0; }
+.mobile-bottomnav a[aria-current="page"] { color: rgb(var(--brand)); }
+.mobile-bottomnav a[aria-current="page"] span { color: rgb(var(--brand)); }
+.mobile-bottomnav .create-link { background: rgb(var(--brand)); color: rgb(var(--on-brand)); border-radius: 14px; box-shadow: none; }
+.mobile-bottomnav .create-link:focus-visible,
+.mobile-bottomnav a:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 3px; }
+@media (max-width: 768px) {
+  :root { --top: 66px; --bottom: 100px; }
+  .workspace-shell { padding-top: 66px; }
+  .workspace-column { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .workspace-header { margin-bottom: 14px; }
+}
+
+/* Inputs: calm charcoal surface, muted border, red only on focus. */
+.field {
+  border: 1px solid rgb(51 51 55);
+  background: rgb(35 35 38);
+  color: rgb(248 249 252);
+  box-shadow: none;
+}
+.field::placeholder { color: rgb(157 161 171); }
+.field:focus,
+.field:focus-visible { border-color: rgb(var(--brand)); background: rgb(35 35 38); box-shadow: 0 0 0 1px rgb(var(--brand) / .22); outline: 0; }
+textarea.field { min-height: 120px; }
+
+/* Search/explore surfaces use one neutral tile treatment. */
+.explore-page > div:first-child { background: rgb(var(--c-fog)); border-color: rgb(var(--c-line)); }
+.explore-page > div:first-child input.field { border-radius: 12px; }
+.explore-page a.card-interactive { min-height: 118px; border: 1px solid rgb(var(--c-line)); background: rgb(var(--c-snow)); box-shadow: none; }
+.explore-page a.card-interactive:hover { border-color: rgb(var(--c-line)); background: rgb(var(--c-mist)); }
+
+/* Prompt media: clear image plus a readable bottom gradient, never blur. */
+.prompt-card-media .peek-img-target,
+.prompt-card-media .peek-stage:not([data-peek="closed"]) .peek-img-target { filter: none; transform: none; }
+.prompt-card-media .peek-stage::after,
+.prompt-card-media .peek-stage:not([data-peek="closed"])::after {
+  background: linear-gradient(to top, rgb(0 0 0 / .78), rgb(0 0 0 / .2) 45%, transparent 78%);
+  box-shadow: none;
+}
+.glass-h { background: rgb(24 24 27); }
+.glass-h-bg { filter: none; transform: none; }
+.glass-h::before { background: linear-gradient(to top, rgb(0 0 0 / .82), rgb(0 0 0 / .28) 58%, transparent); box-shadow: none; }
+.prompt-card .text-onMedia,
+.prompt-card .glass-h-text,
+.prompt-card .prompt-text-scroll { color: rgb(248 249 252); }
+.prompt-card .prompt-lock-note { color: rgb(238 241 248); }
+.prompt-cta-row .btn-primary,
+.prompt-use-cta { background: rgb(var(--brand)); color: rgb(var(--on-brand)); border: 0; box-shadow: none; }
+.prompt-cta-row .btn-primary:hover,
+.prompt-use-cta:hover { background: rgb(var(--brand-lo)); }
+
+/* Compact, high-contrast notifications. */
+.notification-item { min-height: 0; padding: 12px 14px; border-color: rgb(var(--c-line)); background: rgb(var(--c-snow)); }
+.notification-item[data-unread="1"] { border-color: rgb(var(--brand) / .36); background: rgb(var(--brand-tint)); }
+.notification-item .notification-title { color: rgb(var(--c-ink)); }
+.notification-item .notification-body { color: rgb(var(--c-ink-2)); }
+
+/* Profile: avatar and four stats are independent blocks. */
+.profile-hero-avatar-wrap { display: flex; justify-content: center; padding-top: 12px; }
+.profile-hero-avatar { width: clamp(84px, 22vw, 104px); flex: 0 0 auto; }
+.profile-stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; padding: 12px 16px 0; }
+.profile-stats-grid .pstat { min-height: 74px; border: 1px solid rgb(var(--c-line)); border-radius: 14px; background: rgb(var(--c-snow)); }
+.profile-actions > .btn { min-width: 0; }
+
+/* Consistent keyboard and pressed states across the app. */
+.btn:focus-visible, .icon-btn:focus-visible, a:focus-visible, button:focus-visible, .field:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 3px; }
+.btn:active, .icon-btn:active, .profile-stats-grid .pstat:active { transform: translateY(1px); }
+
+@media (max-width: 520px) {
+  .profile-stats-grid { gap: 6px; padding-inline: 12px; }
+  .profile-stats-grid .pstat { min-height: 70px; padding-inline: 2px; }
+  .profile-actions { gap: 6px; padding-inline: 12px; }
+  .profile-actions > .btn { font-size: .78rem; padding-inline: 8px; }
+}
