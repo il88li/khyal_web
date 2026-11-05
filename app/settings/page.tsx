@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { BottomSheet } from "@/components/ui";
 import { VERSION, disablePush, enablePush, explain, sb, thumb, toast, uid, uploadImage } from "@/lib/supabase";
 import { Bell, ChevronLeft, ChevronRight, Database, Languages, Lock, Palette, ShieldCheck, Trash2, User } from "@/components/icons";
 import type { LucideIcon } from "@/components/icons";
@@ -41,6 +42,7 @@ export default function Settings() {
   const router = useRouter(), file = useRef<HTMLInputElement>(null), cov = useRef<HTMLInputElement>(null);
   const [f, setF] = useState({ display_name: "", username: "", bio: "", avatar_url: "", cover_url: "", links: "", is_private: false });
   const [email, setEmail] = useState(""), [busy, setBusy] = useState(false), [reduce, setReduce] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [view, setView] = useState<string | null>(null);
   useEffect(() => { // كل واجهة فرعية لها سجلّ تاريخ ليعمل زر الرجوع
     const read = () => { const h = location.hash.slice(1); setView(MENU.some((m) => m.id === h) ? h : null); };
@@ -90,8 +92,9 @@ export default function Settings() {
     const l = document.createElement("a"); l.href = URL.createObjectURL(new Blob([JSON.stringify({ prompts: a.data, library: b.data }, null, 2)], { type: "application/json" })); l.download = "khiyal-data.json"; l.click();
   }
   async function deleteAccount() {
-    if (!confirm("حذف الحساب نهائياً مع كل منشوراتك؟ لا يمكن التراجع.")) return;
+    setBusy(true);
     const r = await fetch("/api/account", { method: "DELETE" });
+    setBusy(false);
     if (r.ok) { await sb.auth.signOut(); router.replace("/auth"); } else toast("تعذّر حذف الحساب");
   }
 
@@ -197,9 +200,18 @@ export default function Settings() {
       {view === "danger" && (
       <Section id="danger" icon={Trash2} title="حذف الحساب" danger>
         <p className="text-sm text-graphite">يحذف حسابك مع كل منشوراتك نهائياً ولا يمكن التراجع.</p>
-        <button onClick={deleteAccount} className="btn w-full !border-danger/30 !text-danger">حذف الحساب نهائياً</button>
+        <button onClick={() => setDeleteOpen(true)} className="btn w-full !border-danger/30 !text-danger">حذف الحساب نهائياً</button>
       </Section>
       )}
+      <BottomSheet open={deleteOpen} onClose={() => setDeleteOpen(false)} title="حذف الحساب">
+        <div className="flex flex-col gap-4 py-2">
+          <p className="text-sm leading-7 text-graphite">سيُحذف حسابك ومنشوراتك ومكتبتك نهائياً. لا يمكن التراجع عن هذا الإجراء.</p>
+          <div className="flex gap-2">
+            <button onClick={() => setDeleteOpen(false)} className="btn btn-soft flex-1">إلغاء</button>
+            <button onClick={deleteAccount} disabled={busy} className="btn flex-1 !border-danger/30 !bg-danger !text-on-brand">{busy ? "جارٍ الحذف…" : "أحذف حسابي"}</button>
+          </div>
+        </div>
+      </BottomSheet>
     </main>
   );
 }

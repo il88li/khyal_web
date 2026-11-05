@@ -21,6 +21,12 @@ export default function NewPrompt() {
   const busy = phase !== "idle";
   const ready = useMemo(() => publishReadiness({ text, images: items.length }), [text, items.length]);
 
+  useEffect(() => {
+    try { const draft = localStorage.getItem("khiyal:new-draft"); if (draft) setText(draft); } catch {}
+  }, []);
+  useEffect(() => {
+    try { if (text.trim()) localStorage.setItem("khiyal:new-draft", text); else localStorage.removeItem("khiyal:new-draft"); } catch {}
+  }, [text]);
   useEffect(() => { // تفريع: املأ النموذج بنص الأصل وانسبه عند النشر
     const f = new URLSearchParams(location.search).get("fork"); if (!f) return;
     sb.from("prompts").select("id,body,enhanced,category_id").eq("id", f).maybeSingle().then(({ data }) => { if (data) { setForkOf(data.id); setText(data.enhanced ?? data.body); setForkCat(data.category_id ?? null); } });
@@ -62,6 +68,7 @@ export default function NewPrompt() {
         ({ error } = await sb.from("prompts").insert(row));
       }
       if (error) throw error;
+      try { localStorage.removeItem("khiyal:new-draft"); } catch {}
       (window as any).__feedDirty = true; toast("تم النشر"); router.push("/");
     } catch (e: any) { toast(explain(e)); setPhase("idle"); }
   }

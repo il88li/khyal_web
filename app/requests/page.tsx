@@ -2,18 +2,20 @@
 // app/requests/page.tsx — طلبات المتابعة المعلّقة (للحسابات الخاصة): قبول/رفض فوري
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { sb, toast, uid } from "@/lib/supabase";
+import { explain, sb, toast, uid } from "@/lib/supabase";
+import { ErrorState, EmptyState, Skeleton } from "@/components/states";
 
 type R = { follower_id: string; profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null };
 export default function Requests() {
-  const [items, setItems] = useState<R[] | null>(null), [me, setMe] = useState<string>();
+  const [items, setItems] = useState<R[] | null>(null), [me, setMe] = useState<string>(), [error, setError] = useState(""), [retry, setRetry] = useState(0);
   useEffect(() => {
     uid().then(async (id) => {
       setMe(id); if (!id) return;
-      const { data } = await sb.from("follows").select("follower_id,profile:profiles!follower_id(display_name,username,avatar_url)").eq("following_id", id).eq("status", "pending");
+      const { data, error: loadError } = await sb.from("follows").select("follower_id,profile:profiles!follower_id(display_name,username,avatar_url)").eq("following_id", id).eq("status", "pending");
+      if (loadError) { setError(explain(loadError)); return; }
       setItems((data as any) ?? []);
     });
-  }, []);
+  }, [retry]);
   async function act(fid: string, accept: boolean) {
     const prev = items; setItems((a) => a && a.filter((x) => x.follower_id !== fid)); navigator.vibrate?.(8);
     const key = { follower_id: fid, following_id: me! };
@@ -22,8 +24,8 @@ export default function Requests() {
   }
   return (
     <main className="flex flex-col gap-4 pt-4">
-      {!items ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-mist" />)
-        : !items.length ? <p className="py-16 text-center text-graphite">لا توجد طلبات.</p>
+      {error ? <ErrorState message={error} onRetry={() => { setError(""); setItems(null); setRetry((value) => value + 1); }} /> : !items ? <Skeleton variant="list" count={3} />
+        : !items.length ? <EmptyState title="لا توجد طلبات" hint="ستظهر هنا طلبات متابعة الحسابات الخاصة." />
         : items.map((r) => (
           <div key={r.follower_id} className="card flex items-center gap-4 p-4">
             <Link href={`/profile/${r.follower_id}`} className="flex min-w-0 flex-1 items-center gap-4">

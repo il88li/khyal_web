@@ -1,5 +1,5 @@
 "use client";
-// components/chrome.tsx — تخطيط خيال Luminous Minimalism، RTL ومتجاوب
+// components/chrome.tsx — Sidebar للويب، TopBar للسياق، وBottomNav للهاتف
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import ButtonFx from "@/components/ButtonFx";
 import Reveal from "@/components/Reveal";
@@ -15,28 +15,12 @@ import { AuthProvider, useAuth } from "./auth";
 import { Skeleton } from "./states";
 import { AdSlot } from "./AdSlot";
 import { BottomSheet } from "./ui";
-import { FuzzyText } from "./ui/fuzzy-text";
 import { isBare, refreshWebToken, registerToken, sb, uid } from "@/lib/supabase";
 
 export const haptic = (ms = 8) => { try { navigator.vibrate?.(ms); } catch {} };
 
-/** هوية «khyal studio» بتأثير النص الضبابي (FuzzyText) — يقرأ لون النص من السمة تلقائياً */
 function FuzzyBrand({ size = 20 }: { size?: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [color, setColor] = useState("rgb(var(--c-ink))");
-  useEffect(() => {
-    const read = () => { if (ref.current) setColor(getComputedStyle(ref.current).color || "rgb(var(--c-ink))"); };
-    read();
-    const mo = new MutationObserver(read);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => mo.disconnect();
-  }, []);
-  return (
-    <span ref={ref} className="inline-flex text-charcoal" style={{ lineHeight: 1 }}>
-      <FuzzyText text="khyal studio" fontSize={size} fontWeight={800} color={color}
-        enableHover={false} baseIntensity={0.12} hoverIntensity={0.5} fuzzRange={12} glitchMode glitchInterval={4200} glitchDuration={180} />
-    </span>
-  );
+  return <span className="brand-wordmark" style={{ fontSize: size, lineHeight: 1 }}>خيال</span>;
 }
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -60,7 +44,7 @@ const MOBILE_LINKS: NavItem[] = [
   { href: "/profile/me", label: "ملفي", icon: UserRound },
 ];
 const TITLES: [string, string][] = [
-  ["/enhance", "تحسين البرومبت"], ["/community", "المجتمع"],
+  ["/enhance", "حسّن كتابتك"], ["/community", "المجتمع"],
   ["/safety", "الأمان والثقة"], ["/new", "برومبت جديد"], ["/notifications", "الإشعارات"],
   ["/requests", "طلبات المتابعة"], ["/settings", "الإعدادات"], ["/search", "استكشف"],
   ["/library", "مكتبتي"], ["/stats", "إحصاءاتي"], ["/verification", "توثيق الحساب"], ["/profile/me", "ملفي"],
@@ -70,7 +54,7 @@ const PAGE_HEADINGS: [string, string, string][] = [
   ["/", "الرئيسية", "أفكار جديدة تستحق أن تتحول إلى برومبتات أوضح."],
   ["/search", "استكشف", "ابحث عن فكرة أو برومبت أو مبدع."],
   ["/community", "المجتمع", "مساحة عربية لتبادل ما تتعلمه وتكتبه."],
-  ["/enhance", "ورشة التحسين", "ابدأ بفكرة أولية، واضبط النتيجة على طريقتك."],
+  ["/enhance", "حسّن كتابتك", "حوّل فكرتك إلى برومبت واضح بنبرة تناسب جمهورك."],
   ["/library", "مكتبتي", "مكان واحد للبرومبتات التي تريد الرجوع إليها."],
   ["/new", "برومبت جديد", "رتّب فكرتك، ثم انشرها ليستفيد منها الآخرون."],
   ["/notifications", "الإشعارات", "آخر ما حدث على حسابك ومنشوراتك."],

@@ -215,9 +215,9 @@ export async function streamEnhance(messages: Msg[], preferred?: string, _onlyFr
 }
 
 /** إكمال غير متدفّق (للمهام القصيرة كالتصنيف): يجرّب النماذج بالتتابع بمهلة 35ث لكل منها */
-export async function completeText(messages: Msg[], maxTokens = 300): Promise<{ text: string; model: string }> {
+export async function completeText(messages: Msg[], maxTokens = 300, preferred?: string): Promise<{ text: string; model: string }> {
   const errs: string[] = [];
-  for (const model of (await candidatesFor()).slice(0, 5)) {
+  for (const model of (await candidatesFor(preferred)).slice(0, 5)) {
     const ac = new AbortController(), t = setTimeout(() => ac.abort(), CONNECT_MS);
     try {
       const res = await fetch(`${BASE}/chat/completions`, {

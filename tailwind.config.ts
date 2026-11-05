@@ -1,4 +1,4 @@
-// tailwind.config.ts — مقياس خيال — الألوان عبر متغيّرات CSS (app/globals.css ثم app/clean.css)
+// tailwind.config.ts — توكنز خيال الموحدة؛ المصدر البصري الوحيد هو design.md وglobals.css
 import type { Config } from "tailwindcss";
 
 export default {
@@ -37,11 +37,8 @@ export default {
 
       // ── لمسات Gen Z (إضافة فقط): خلفية دافئة ولمستان + ألوان الوسائط/الطبقات ──
       bg: "rgb(var(--c-bg) / <alpha-value>)",
-      accentWarm: "rgb(var(--accent-warm) / <alpha-value>)",
       "accent-warm": "rgb(var(--accent-warm) / <alpha-value>)",
-      accentMint: "rgb(var(--accent-mint) / <alpha-value>)",
       "accent-mint": "rgb(var(--accent-mint) / <alpha-value>)",
-      onMedia: "rgb(var(--on-media) / <alpha-value>)",
       "on-media": "rgb(var(--on-media) / <alpha-value>)",
       "on-accent": "rgb(var(--on-accent) / <alpha-value>)",
       scrim: "rgb(var(--scrim) / <alpha-value>)",
@@ -84,9 +81,8 @@ export default {
 
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
-        // خط العناوين الكبيرة (Display): تجوال المحمَّل أصلًا — بلا تحميل إضافي
-        display: ["var(--font-display)", "Tajawal", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
+        sans: ["IBM Plex Sans Arabic", "var(--font-plex)", "system-ui", "sans-serif"],
+        display: ["IBM Plex Sans Arabic", "var(--font-plex)", "system-ui", "sans-serif"],
       },
       transitionTimingFunction: {
         out: "cubic-bezier(.2,.8,.3,1)",

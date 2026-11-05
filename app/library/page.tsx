@@ -6,12 +6,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Copy, Send, Sparkles, Trash2, BookMarked, Search } from "@/components/icons";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states";
 import { sb, toast, uid, ago, explain, copyText } from "@/lib/supabase";
+import { BottomSheet } from "@/components/ui";
 
 type Item = { id: string; body: string; enhanced: string; model: string | null; category_id: number | null; created_at: string };
 
 export default function Library() {
   const [items, setItems] = useState<Item[] | null>(null), [cats, setCats] = useState<Record<number, string>>({});
-  const [cat, setCat] = useState<number | null>(null), [q, setQ] = useState(""), [open, setOpen] = useState<string | null>(null), [err, setErr] = useState(""), [tick, setTick] = useState(0);
+  const [cat, setCat] = useState<number | null>(null), [q, setQ] = useState(""), [open, setOpen] = useState<string | null>(null), [err, setErr] = useState(""), [tick, setTick] = useState(0), [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -35,8 +36,9 @@ export default function Library() {
     if (error) return toast(explain(error));
     (window as any).__feedDirty = true; toast("تم النشر على حسابك");
   }
-  async function remove(i: Item) {
-    if (!confirm("حذف هذا العنصر من مكتبتك؟")) return;
+  function remove(i: Item) { setDeleteTarget(i); }
+  async function deleteItem(i: Item) {
+    setDeleteTarget(null);
     const prev = items; setItems((a) => a && a.filter((x) => x.id !== i.id));
     const { error } = await sb.from("library").delete().eq("id", i.id);
     if (error) { setItems(prev); toast(explain(error)); } else toast("تم الحذف");
@@ -80,6 +82,12 @@ export default function Library() {
                 </motion.article>))}
             </AnimatePresence>
           </div>)}
+      <BottomSheet open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="حذف من المكتبة">
+        <div className="flex flex-col gap-4 py-2">
+          <p className="text-sm leading-7 text-graphite">سيُحذف هذا العنصر من مكتبتك. يمكنك دائماً حفظ نسخة جديدة من أداة «حسّن كتابتك».</p>
+          <div className="flex gap-2"><button onClick={() => setDeleteTarget(null)} className="btn btn-soft flex-1">إلغاء</button><button onClick={() => deleteTarget && deleteItem(deleteTarget)} className="btn flex-1 !bg-danger !text-on-brand">حذف</button></div>
+        </div>
+      </BottomSheet>
     </main>
   );
 }

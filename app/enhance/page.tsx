@@ -27,6 +27,7 @@ function Enhancer() {
   const [view, setView] = useState<"res" | "diff">("res"), [saving, setSaving] = useState("");
   const ctl = useRef<AbortController | null>(null);
   const [hist, setHist] = useState<Hist[]>([]), [histOpen, setHistOpen] = useState(false), first = useRef(true);
+  const [comparison, setComparison] = useState<{ first: string; second: string } | null>(null), [compareBusy, setCompareBusy] = useState(false);
 
   useEffect(() => {
     if (!qs.get("text")) { try { const d = localStorage.getItem("khiyal:draft"); if (d) setText(d); } catch {} } // استعادة المسودة
@@ -75,6 +76,19 @@ function Enhancer() {
     } catch (e: any) { if (e.name !== "AbortError") setErr("تعذّر الاتصال بالخادم"); }
     setBusy(false);
   }
+  async function compareFree() {
+    if (!text.trim() || compareBusy) return;
+    setCompareBusy(true); setErr("");
+    const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 60_000);
+    try {
+      const r = await fetch("/api/enhance/compare-free", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ac.signal, body: JSON.stringify({ text, category: cat?.name_ar, lang, tone, detail }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error === "rate_limited" ? "وصلت إلى حد المقارنة الآن، جرّب لاحقاً." : "تعذّرت المقارنة الآن، أعد المحاولة.");
+      setComparison({ first: String(j.first || ""), second: String(j.second || "") });
+    } catch (e: any) { if (e.name !== "AbortError") setErr(e.message || "تعذّرت المقارنة الآن"); }
+    finally { clearTimeout(timer); setCompareBusy(false); }
+  }
+
   async function persist(kind: "library" | "prompts") {
     const id = (await sb.auth.getSession()).data.session?.user.id; if (!id || !out) return;
     setSaving(kind);
@@ -137,11 +151,17 @@ function Enhancer() {
                 <button onClick={copy} disabled={!out} className={act}><Copy size={19} />نسخ</button>
                 <button onClick={() => persist("library")} disabled={!out || busy || !!saving} className={act}><Bookmark size={19} />{saving === "library" ? "…" : "حفظ"}</button>
                 <button onClick={() => persist("prompts")} disabled={!out || busy || !!saving} className={`${act} !border-transparent !bg-brand !text-[rgb(var(--on-brand))]`}><Send size={19} />{saving === "prompts" ? "…" : "انشر"}</button>
+                <button onClick={compareFree} disabled={!text.trim() || compareBusy || busy} className={`${act} !border-brand/20 !text-brand-ink`}>{compareBusy ? "جارٍ…" : "قارن نسختين"}</button>
               </div>
             </>)}
           </motion.section>
         )}
       </AnimatePresence>
+
+      {comparison && <section className="card-flat flex flex-col gap-3 p-4" aria-label="مقارنة نسختين">
+        <div className="flex items-center justify-between gap-2"><h2 className="font-semibold text-charcoal">مقارنة نسختين مجانيتين</h2><button onClick={() => setComparison(null)} className="text-caption text-smoke">إخفاء</button></div>
+        <div className="grid gap-3 md:grid-cols-2"><article className="rounded-xl bg-mist p-3"><h3 className="mb-2 text-caption font-semibold text-brand-ink">النسخة الأولى</h3><p className="whitespace-pre-wrap text-sm leading-7">{comparison.first}</p></article><article className="rounded-xl bg-mist p-3"><h3 className="mb-2 text-caption font-semibold text-brand-ink">النسخة الثانية</h3><p className="whitespace-pre-wrap text-sm leading-7">{comparison.second}</p></article></div>
+      </section>}
 
       <BottomSheet compact open={opts} onClose={() => setOpts(false)} title="خيارات التحسين">
         <div className="flex flex-col gap-4 pb-2">

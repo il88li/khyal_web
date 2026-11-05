@@ -69,9 +69,9 @@ if (/j\.detail/.test(page)) bad("enhance page", "يعرض j.detail للمستخ�
 if (/setUsed\(|used\?\.replace/.test(page)) bad("enhance page", "ما يزال يعرض اسم النموذج"); else ok("لا يُعرض اسم النموذج في المحسّن");
 
 console.log("\n[5] الهيدر الثابت والشريط العائم");
-const clean = read("app/clean.css");
-if (!/\.app-topbar \{[^}]*position: fixed !important; top: calc\(10px \+ env\(safe-area-inset-top\)\) !important/.test(clean)) bad("clean.css", "الهيدر ليس قرصاً عائماً"); else ok("الهيدر قرص عائم مرن العرض");
-if (!/\.mobile-bottomnav \{[^}]*bottom: calc\(10px/.test(clean)) bad("clean.css", "الشريط السفلي ليس عائماً"); else ok("الشريط السفلي عائم بحواف دائرية");
+const styles = read("app/globals.css");
+if (!/\.app-topbar \{[^}]*position: fixed/.test(styles)) bad("globals.css", "الهيدر ليس ثابتاً"); else ok("الهيدر ثابت للسياق فقط");
+if (!/\.mobile-bottomnav \{[^}]*bottom: calc\(10px/.test(styles)) bad("globals.css", "الشريط السفلي ليس عائماً"); else ok("الشريط السفلي عائم بحواف دائرية");
 const chrome = read("components/chrome.tsx");
 if (!/MoreSheet open=\{more\}/.test(chrome.split("export function BottomNav")[0])) bad("chrome.tsx", "قائمة المزيد ليست في الهيدر"); else ok("قائمة «المزيد» في الهيدر");
 if (!/ENHANCE_LINK/.test(chrome)) bad("chrome.tsx", "زر التحسين غير موجود في الشريط السفلي"); else ok("زر واجهة التحسين في الشريط السفلي");

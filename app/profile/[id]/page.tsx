@@ -60,13 +60,14 @@ export default function Profile() {
     })();
   }, [ready, p, own]); // eslint-disable-line
   const [blocked, setBlocked] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false), [deleteTarget, setDeleteTarget] = useState<Cell | null>(null);
   useEffect(() => {
     if (!me || !pid || me === pid) return;
     sb.from("blocks").select("blocked_id").match({ blocker_id: me, blocked_id: pid }).maybeSingle().then(({ data }) => setBlocked(!!data));
   }, [me, pid]);
   async function block() {
     if (!me || !pid) return;
-    if (!blocked && !confirm("حظر هذا المستخدم؟ لن ترى منشوراته ولن يرى منشوراتك.")) return;
+    if (!blocked) { setBlockOpen(true); return; }
     const next = !blocked; setBlocked(next);
     const key = { blocker_id: me, blocked_id: pid };
     const { error } = next ? await sb.from("blocks").insert(key) : await sb.from("blocks").delete().match(key);
@@ -149,8 +150,9 @@ export default function Profile() {
     setEditCell(null); toast("تم التعديل");
     (window as any).__feedDirty = true;
   }
-  async function removePrompt(c: Cell) {
-    if (!confirm("حذف هذا البرومبت نهائياً؟")) return;
+  function removePrompt(c: Cell) { setDeleteTarget(c); }
+  async function deletePrompt(c: Cell) {
+    setDeleteTarget(null);
     setBusy("del:" + c.id);
     const { error } = await sb.from("prompts").delete().eq("id", c.id);
     setBusy("");
@@ -350,6 +352,16 @@ export default function Profile() {
         <button onClick={saveEdit} disabled={!draft.trim() || busy === "edit"} className="btn btn-primary mt-2 !min-h-10 w-full disabled:opacity-50">
           {busy === "edit" ? "جارٍ الحفظ…" : "حفظ التعديل"}
         </button>
+      </BottomSheet>
+
+      <BottomSheet open={blockOpen} onClose={() => setBlockOpen(false)} title="حظر المستخدم">
+        <div className="flex flex-col gap-4 py-2">
+          <p className="text-sm leading-7 text-graphite">لن ترى منشوراته ولن يرى منشوراتك. يمكنك إلغاء الحظر لاحقاً من نفس الصفحة.</p>
+          <div className="flex gap-2"><button onClick={() => setBlockOpen(false)} className="btn btn-soft flex-1">إلغاء</button><button onClick={async () => { setBlockOpen(false); const next = true; setBlocked(next); const key = { blocker_id: me, blocked_id: pid }; const { error } = await sb.from("blocks").insert(key); if (error) { setBlocked(false); toast("تعذّر التنفيذ"); } else { toast("تم الحظر"); setFol(false); } }} className="btn flex-1 !bg-danger !text-on-brand">حظر</button></div>
+        </div>
+      </BottomSheet>
+      <BottomSheet open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="حذف البرومبت">
+        <div className="flex flex-col gap-4 py-2"><p className="text-sm leading-7 text-graphite">سيُحذف البرومبت وصوره نهائياً. لا يمكن التراجع عن هذا الإجراء.</p><div className="flex gap-2"><button onClick={() => setDeleteTarget(null)} className="btn btn-soft flex-1">إلغاء</button><button onClick={() => deleteTarget && deletePrompt(deleteTarget)} className="btn flex-1 !bg-danger !text-on-brand">حذف</button></div></div>
       </BottomSheet>
 
       {/* واجهة المتابعين والمتابعون */}

@@ -1,6 +1,6 @@
 "use client";
 // components/ButtonFx.tsx — تفاعل كل الأزرار (.btn): بقعة ضوء تتبّع الفأرة (سطح المكتب) + موجة عند اللمس/النقر.
-// مستمع واحد مفوَّض على document بلا مكتبة ولا إعادة رسم React؛ التأثير نفسه بـ CSS (app/clean.css) خلف النص فلا يغطيه.
+// مستمع واحد مفوَّض على document بلا مكتبة ولا إعادة رسم React؛ التأثير نفسه بـ CSS (app/globals.css) خلف النص فلا يغطيه.
 // يحترم تخفيف الحركة (تفضيل النظام وخيار التطبيق والأجهزة الضعيفة) عبر motionAllowed().
 import { useEffect } from "react";
 import { motionAllowed } from "@/lib/cardFx";

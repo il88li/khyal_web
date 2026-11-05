@@ -1,141 +1,364 @@
-// components/PromptCard.tsx — إضافة variant للأحجام المختلفة
+"use client";
+// components/PromptCard.tsx — محتوى أولًا: رأس هادئ، نص مقروء، وأفعال واضحة
 import { memo, useEffect, useRef, useState } from "react";
-// ... imports أخرى
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import {
+  Braces, Sparkles, UserPlus, Check } from "@/components/icons";
+import { ago, extractVars, fmt, imgSet, sb, toast, uid, useCategories } from "@/lib/supabase";
+import { BottomSheet, Comments, VarsSheet } from "./ui";
+import { VerifiedBadge } from "./badges";
+import { PromptCover } from "./PromptCover";
+import { SafeImg } from "./states";
+import PromptPeekLayer from "./PromptPeekLayer";
+import { previewOf } from "@/lib/access";
+// معاينة الصور ثقيلة (سحب/تكبير) — تُحمَّل فقط عند فتحها
+const ImagePreview = dynamic(() => import("./ImagePreview"), { ssr: false });
+import type { PromptRow } from "@/types";
+import { useTilt } from "@/lib/tilt";
+import { haptic, useCountUp } from "@/lib/motion";
+import { usePromptActions } from "@/hooks/usePromptActions";
+import { PromptActions } from "./PromptActions";
 
-type PromptCardVariant = "default" | "hero" | "featured" | "compact";
+const REASONS = ["محتوى مسيء", "احتيال أو spam", "انتهاك حقوق", "أخرى"];
 
-interface PromptCardProps {
-  p: PromptRow;
-  i?: number;
-  variant?: PromptCardVariant;
+/* ── ذاكرة عالمية لمن أتابعهم ── */
+let followedSet: Set<string> | null = null;
+let followedPromise: Promise<Set<string>> | null = null;
+async function getFollowed(): Promise<Set<string>> {
+  if (followedSet) return followedSet;
+  if (followedPromise) return followedPromise;
+  followedPromise = (async () => {
+    try {
+      const me = await uid();
+      if (!me) return (followedSet = new Set());
+      const { data } = await sb
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", me)
+        .eq("status", "accepted");
+      followedSet = new Set((data ?? []).map((x) => x.following_id as string));
+      return followedSet;
+    } catch {
+      return (followedSet = new Set());
+    }
+  })();
+  return followedPromise;
 }
+const invalidateFollowed = () => { followedSet = null; followedPromise = null; };
 
-function PromptCard({ p, i = 0, variant = "default" }: PromptCardProps) {
-  const isHero = variant === "hero";
-  const isCompact = variant === "compact";
-  const isFeatured = variant === "featured";
-  
-  // ... كل المنطق الأصلي يبقى (likes, saves, follow, etc.)
-  
+/* حركات الدخول المتتابعة: تُقصَر على أول ظهور في الجلسة فقط */
+let entranceSeen = false;
+const MAX_STAGGER = 4, STEP = 0.04;
+
+function PromptCard({ p, i = 0 }: { p: PromptRow; i?: number }) {
+  const tilt = useTilt(2); // ميل ≤ 2° بفأرة فقط
+  const cats = useCategories();
+  const { liked, saved, likes: count, toggle, copy, share } = usePromptActions(p);
+  const likes = useCountUp(count);
+  const [idx, setIdx] = useState(0);
+  const [sheet, setSheet] = useState(false);
+  const [lb, setLb] = useState<number | null>(null);
+  const [mine, setMine] = useState(false);
+  const [rep, setRep] = useState(false);
+  const [orig, setOrig] = useState(false);
+  const [vsheet, setVsheet] = useState(false);
+  const override: string | null = null; // نصّ يدوي بعد التعديل — التعديل صار من الملف الشخصي
+
+  const [following, setFollowing] = useState<boolean | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+
+  const lastTap = useRef(0);
+  const timer = useRef<any>();
+  const firstRun = useRef(!entranceSeen);
+  useEffect(() => { if (firstRun.current) entranceSeen = true; }, []);
+
+  useEffect(() => {
+    uid().then((id) => setMine(!!id && id === p.author?.id));
+  }, [p.author?.id]);
+
+  const authorId = p.author?.id;
+  useEffect(() => {
+    if (mine || !authorId) { setFollowing(null); return; }
+    let dead = false;
+    getFollowed().then((set) => { if (!dead) setFollowing(set.has(authorId)); });
+    return () => { dead = true; };
+  }, [mine, authorId]);
+
+  async function follow() {
+    if (!p.author?.id || followBusy) return;
+    const me = await uid();
+    if (!me) return toast("سجّل الدخول أولاً");
+    setFollowBusy(true);
+    const willFollow = !following;
+    setFollowing(willFollow);
+    haptic(8);
+    const key = { follower_id: me, following_id: p.author.id };
+    const { error } = willFollow
+      ? await sb.from("follows").insert(key)
+      : await sb.from("follows").delete().match(key);
+    setFollowBusy(false);
+    if (error && error.code !== "23505") {
+      setFollowing(!willFollow);
+      toast("تعذّر تنفيذ المتابعة");
+    } else {
+      invalidateFollowed();
+      toast(willFollow ? "تتابعه الآن" : "أُلغي المتابعة");
+    }
+  }
+
+  const tapText = () => {
+    const n = Date.now();
+    if (n - lastTap.current < 320 && !liked) toggle("likes");
+    lastTap.current = n;
+  };
+  function tapImg(i: number) {
+    const n = Date.now();
+    if (n - lastTap.current < 300) {
+      clearTimeout(timer.current);
+      if (!liked) toggle("likes");
+      lastTap.current = 0;
+      return;
+    }
+    lastTap.current = n;
+    timer.current = setTimeout(() => setLb(i), 300);
+  }
+
+  const hasBoth = !!p.enhanced && p.enhanced !== p.body;
+  const shown = orig ? p.body : override ?? p.enhanced ?? p.body;
+  // المقصوص يأتي من الخادم (RPC prompt_gated) بحسب مستوى المستخدم، وإلا نحسبه محلياً كاحتياطٍ.
+  const serverGated = typeof p.locked === "boolean";
+  const gate = serverGated ? { shown, locked: !!p.locked, hidden: p.hidden ?? 0 } : previewOf(shown, "guest");
+  const revealEnabled = !(serverGated && p.locked); // النص مقصوص من الخادم فلا فائدة من زر الكشف
+  const vars = extractVars(shown);
+
+  async function report(reason: string) {
+    const id = await uid();
+    if (!id) return toast("سجّل الدخول أولاً");
+    const { error } = await sb.from("reports").insert({ prompt_id: p.id, reporter_id: id, reason });
+    setRep(false);
+    toast(error ? (error.code === "23505" ? "بلغتَ عن هذا المنشور سابقاً" : "تعذّر الإرسال") : "شكراً، سنراجع البلاغ");
+  }
+
+  const first = p.images?.[0];
+  const ratio = first?.w && first?.h ? Math.min(Math.max(first.w / first.h, 0.8), 1.91) : 4 / 3;
+  const name = p.author?.display_name ?? p.author?.username ?? "مستخدم";
+  const cat = p.category_id != null ? cats[p.category_id] : null;
+  const hot = p.like_count >= 50;
+  const fresh = Date.now() - new Date(p.created_at).getTime() < 86_400_000;
+  const trusted = (p.copy_count ?? 0) >= 10;
+  const initial = name.trim().slice(0, 1);
+
   return (
     <motion.article
-      initial={{ opacity: 0, y: 8 }}
+      initial={firstRun.current ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`
-        prompt-card relative flex flex-col h-full
-        ${isHero ? "p-5 md:p-6" : isCompact ? "p-3" : "p-4"}
-        bg-c-snow border border-c-line
-        ${isHero ? "rounded-2xl" : "rounded-xl"}
-        transition-shadow hover:shadow-[var(--sh-2)]
-      `}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: firstRun.current ? Math.min(i, MAX_STAGGER) * STEP : 0 }}
+      className="prompt-card card"
       {...tilt}
     >
-      {/* الرأس: مبسط في compact */}
-      <header className={`
-        flex items-start gap-3 mb-3
-        ${isCompact ? "mb-2" : ""}
-      `}>
-        <Link href={`/profile/${p.author?.id}`} className="avatar shrink-0">
-          {/* ... avatar content */}
+      <header className="prompt-card-head">
+        <Link
+          href={`/profile/${p.author?.id}`}
+          className="avatar h-10 w-10 shrink-0 bg-brand-tint text-brand-ink"
+          data-i={initial}
+          aria-label={`الملف الشخصي: ${name}`}
+        >
+          {p.author?.avatar_url && <img src={p.author.avatar_url} alt="" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
         </Link>
-        
-        {!isCompact && (
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-1.5">
-              <Link href={`/profile/${p.author?.id}`} className="truncate font-semibold text-charcoal">
-                {name}
-              </Link>
-              {p.author?.verified && <VerifiedBadge />}
-            </div>
-            <p className="text-caption text-smoke">{ago(p.created_at)}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+            <Link href={`/profile/${p.author?.id}`} className="truncate text-sm font-semibold text-charcoal">{name}</Link>
+            {p.author?.verified && <VerifiedBadge tier={p.author.verification_tier ?? 1} />}
+            {p.author?.username && <span dir="ltr" className="truncate text-caption text-smoke">@{p.author.username}</span>}
           </div>
-        )}
-        
-        {/* زر المتابعة يظهر فقط في hero/featured */}
-        {(isHero || isFeatured) && !mine && following !== null && (
-          <button onClick={follow} className="btn btn-soft !min-h-8 !px-2.5 !text-caption">
+          <p className="text-caption text-smoke">{ago(p.created_at)}</p>
+        </div>
+        {!mine && following !== null && (
+          <button
+            onClick={follow}
+            disabled={followBusy}
+            className={`btn !min-h-9 !px-3 !text-caption ${following ? "btn-ghost" : "btn-soft"}`}
+          >
             {following ? <Check size={14} /> : <UserPlus size={14} />}
             {following ? "متابع" : "متابعة"}
           </button>
         )}
+        {/* تعديل/حذف البرومبت انتقل إلى الملف الشخصي (تبويب المنشورات) */}
       </header>
 
-      {/* العنوان: Display font في hero */}
-      {p.title && (
-        <h3 className={`
-          font-display font-extrabold text-charcoal mb-2
-          ${isHero ? "text-xl md:text-2xl leading-tight" : "text-base"}
-          ${isCompact ? "text-sm line-clamp-1" : "line-clamp-2"}
-        `}>
-          {p.title}
-        </h3>
-      )}
-
-      {/* المقتطف: سطران كحد أقصى */}
-      <div className="flex-1 min-h-0">
-        <p className={`
-          text-graphite leading-relaxed
-          ${isHero ? "text-base line-clamp-3" : "text-sm line-clamp-2"}
-          ${isCompact ? "text-caption line-clamp-2" : ""}
-        `}>
-          {gate.shown}
-        </p>
-      </div>
-
-      {/* الوسوم: pills صغيرة */}
-      {(p.tags?.length || cat) && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {cat && (
-            <span className="inline-flex items-center rounded-full bg-c-mist px-2 py-0.5 text-caption font-medium text-c-ink-2">
-              {cat}
-            </span>
+      {first ? (
+        <PromptPeekLayer
+          className="prompt-card-media"
+          maxVh={70}
+          imageSrc={first.url}
+          imageAlt={`مرفق للبرومبت: ${name}`}
+          title={p.title}
+          promptText={`${revealEnabled ? shown : gate.shown}${!revealEnabled && gate.locked ? "…" : ""}`}
+          copyText={shown}
+          onCopy={copy}
+          topExtra={hasBoth && (
+            <div className="seg prompt-origin-toggle">
+              {([[false, "✨ محسّن"], [true, "الأصلي"]] as const).map(([v, label]) => (
+                <button key={label} data-on={orig === v ? "1" : undefined} onClick={() => setOrig(v)}>{label}</button>
+              ))}
+            </div>
           )}
-          {p.tags?.slice(0, isCompact ? 1 : 3).map((tag) => (
-            <span key={tag} className="inline-flex items-center rounded-full bg-brand-tint px-2 py-0.5 text-caption font-medium text-brand-ink">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* الصورة المصغرة في hero فقط */}
-      {isHero && first && (
-        <div className="relative mt-4 rounded-xl overflow-hidden aspect-video">
-          <SafeImg {...imgSet(first.url)} className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {/* التذييل: إحصاءات + نسخ */}
-      <footer className={`
-        flex items-center justify-between mt-auto pt-3
-        ${isCompact ? "pt-2" : ""}
-        border-t border-c-line-soft
-      `}>
-        <div className="flex items-center gap-3 text-caption text-smoke">
-          <span className="flex items-center gap-1">
-            <Heart size={isCompact ? 14 : 16} fill={liked ? "currentColor" : "none"} className={liked ? "text-brand" : ""} />
-            {fmt(likes)}
-          </span>
-          <span className="flex items-center gap-1">
-            <MessageCircle size={isCompact ? 14 : 16} />
-            {fmt(p.comment_count)}
-          </span>
-        </div>
-        
-        <button 
-          onClick={copy} 
-          className="flex items-center gap-1 text-caption font-medium text-brand hover:text-brand-ink transition-colors"
-          aria-label="نسخ البرومبت"
+          lockNote={!revealEnabled && (
+            <Link href="/pricing" className="prompt-lock-note prompt-lock-note">باقي البرومبت لمشتركي خيال — اعرف المزيد</Link>
+          )}
+          actions={({ close }: { close: () => void }) => (
+            <div className="peek-actions">
+              {vars.length ? (
+                <button onClick={() => { close(); setVsheet(true); }} className="btn prompt-use-cta"><Braces size={16} /><span>عبّئ المتغيرات</span></button>
+              ) : (
+                <Link href={`/enhance?text=${encodeURIComponent(p.body)}`} className="btn prompt-use-cta"><Sparkles size={16} /><span>جرّبه أو حسّنه</span></Link>
+              )}
+            </div>
+          )}
         >
-          <Copy size={isCompact ? 14 : 16} />
-          {!isCompact && <span>نسخ</span>}
-        </button>
+          <div
+            onScroll={(e) => setIdx(Math.round(Math.abs(e.currentTarget.scrollLeft) / e.currentTarget.clientWidth))}
+            className="prompt-gallery-track"
+          >
+            {p.images.map((im, i) => (
+              <button
+                key={`${im.url}-${i}`}
+                onClick={() => tapImg(i)}
+                className="prompt-gallery-slide"
+                style={{ aspectRatio: ratio }}
+                aria-label={`عرض الصورة ${i + 1} من ${p.images.length}`}
+              >
+                <SafeImg {...imgSet(im.url)} sizes="(max-width: 768px) 100vw, 640px" alt={`مرفق للبرومبت: ${name}`} className="h-full w-full object-cover" />
+                {im.url.endsWith(".gif") && <span className="chip absolute start-3 top-3 bg-charcoal/75 text-snow">GIF</span>}
+              </button>
+            ))}
+          </div>
+          {p.images.length > 1 && (
+            <div className="prompt-gallery-dots" aria-label={`الصورة ${idx + 1} من ${p.images.length}`}>
+              {p.images.map((_, i) => <span key={i} className={i === idx ? "active" : ""} />)}
+            </div>
+          )}
+        </PromptPeekLayer>
+      ) : (
+        /* بلا صورة: غلاف مصمّم بديل يحمل روح البرومبت بدل الفراغ */
+        <div className="prompt-card-media prompt-card-media--cover">
+          <PromptCover title={p.title} category={cat} author={name} />
+        </div>
+      )}
+
+      {(cat || hot || fresh || trusted || (hasBoth && !first) || !!p.tags?.length) && (
+        <div className="prompt-card-tags">
+          {hasBoth && !first && (
+            <div className="seg prompt-origin-toggle">
+              {([[false, "✨ محسّن"], [true, "الأصلي"]] as const).map(([v, label]) => (
+                <button key={label} data-on={orig === v ? "1" : undefined} onClick={() => setOrig(v)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {cat && <span className="chip">{cat}</span>}
+          {/* وسوم قليلة فقط: وسمان كحدّ أقصى لتقليل الزحام */}
+          {p.tags?.slice(0, 2).map((t) => <span key={t} className="chip">{t}</span>)}
+          {/* شارة حالة واحدة فقط — بالأولوية: ترند ← جديد */}
+          {hot ? <span className="chip chip-gold">🔥 ترند</span>
+            : fresh ? <span className="chip">جديد</span>
+            : trusted ? <span className="chip chip-ok">موثّق</span> : null}
+        </div>
+      )}
+
+      {/* بطاقة البرومبت: بنفس نظام معاينة الصورة — ارتفاع ثابت وتمرير داخلي بدل الكشف المنسدل */}
+      {!first && <div className="prompt-card-copy-wrap">
+        <section
+          onClick={tapText}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tapText()}
+          aria-label={revealEnabled ? "نص البرومبت" : "مقتطف من البرومبت"}
+          className="glass-h prompt-text-card"
+        >
+          <span aria-hidden className="glass-h-fallback" />
+          <div className="glass-h-body">
+            {p.title && <p className="text-base font-bold text-onMedia">{p.title}</p>}
+            <div className="prompt-scroll prompt-text-scroll">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-onMedia/90">
+                {revealEnabled ? shown : gate.shown}{!revealEnabled && gate.locked && "…"}
+              </p>
+            </div>
+            {!revealEnabled && (
+              <Link href="/pricing" onClick={(e) => e.stopPropagation()} className="prompt-lock-note prompt-lock-note">
+                باقي البرومبت لمشتركي خيال — اعرف المزيد
+              </Link>
+            )}
+          </div>
+        </section>
+      </div>}
+
+      {(!!p.copy_count || !!p.fork_count || !!p.forked_from) && (
+        <details className="prompt-card-counts">
+          <summary>المزيد</summary>
+          <p>
+          {!!p.copy_count && <span>نُسخ {fmt(p.copy_count)} مرة</span>}
+          {!!p.fork_count && <span>فُرّع {fmt(p.fork_count)}</span>}
+          {p.forked_from && <Link href={`/p/${p.forked_from}`}>مفرّع من أصل ↗</Link>}
+          {!mine && p.id !== "preview" && <Link href={`/new?fork=${p.id}`}>فرّع هذا البرومبت</Link>}
+          </p>
+        </details>
+      )}
+
+      <footer className="prompt-card-footer">
+        <PromptActions
+          liked={liked}
+          saved={saved}
+          likes={count}
+          comments={p.comment_count}
+          onLike={() => toggle("likes")}
+          onSave={() => toggle("saves")}
+          onShare={share}
+          onCopy={copy}
+          onComments={() => p.id !== "preview" && setSheet(true)}
+        />
+        {!first && (
+        <div className="prompt-cta-row">
+          {vars.length ? (
+            <button onClick={() => setVsheet(true)} className="btn btn-primary prompt-use-cta w-full"><Braces size={17} /><span>استخدم هذا البرومبت</span></button>
+          ) : (
+            <Link href={`/enhance?text=${encodeURIComponent(shown)}`} className="btn btn-primary prompt-use-cta w-full"><Sparkles size={17} /><span>استخدم هذا البرومبت</span></Link>
+          )}
+        </div>
+        )}
       </footer>
 
-      {/* ... بقية المكونات (BottomSheet, ImagePreview, etc.) */}
+      {/* ══════════════ النوافذ ══════════════ */}
+      <BottomSheet open={sheet} onClose={() => setSheet(false)} title="التعليقات">
+        {sheet && <Comments promptId={p.id} />}
+      </BottomSheet>
+
+      {lb !== null && (
+        <ImagePreview p={p} start={lb} onClose={() => setLb(null)}
+          a={{ liked, saved, likes: count, onLike: () => toggle("likes"), onSave: () => toggle("saves"), onComment: () => { setLb(null); setSheet(true); }, onCopy: copy, onShare: share }} />
+      )}
+
+      {/* التعديل والحذف انتقلوا إلى الملف الشخصي — هنا الإبلاغ فقط */}
+      <BottomSheet compact open={rep} onClose={() => setRep(false)} title="إبلاغ عن المنشور">
+        {REASONS.map((r) => (
+          <button
+            key={r}
+            onClick={() => report(r)}
+            className="btn btn-ghost mb-1.5 w-full justify-start"
+          >
+            {r}
+          </button>
+        ))}
+      </BottomSheet>
+
+      {/* النص الكامل: المتغيرات تُستخرج وتُعبّأ وتُنسخ من النص كاملاً لا من الغلاف المقتطع */}
+      <VarsSheet text={shown} open={vsheet} onClose={() => setVsheet(false)} />
     </motion.article>
   );
 }
 
+// memo: يمنع إعادة الرسم عند تحديث الفيد إلا إذا تغيّر الكائن نفسه
 export default memo(PromptCard);

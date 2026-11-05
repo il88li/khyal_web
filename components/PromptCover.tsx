@@ -4,7 +4,7 @@
 // موحّد بين: بطاقة الرئيسية (card) · شبكة الملف (tile) · نتائج الاستكشاف (band).
 import { Sparkles } from "@/components/icons";
 
-type Variant = "card" | "tile" | "band";
+type Variant = "card" | "tile" | "band" | "mini";
 
 export function PromptCover({
   title,
@@ -31,7 +31,7 @@ export function PromptCover({
         {author && <span className="prompt-cover-author">{author}</span>}
       </div>
       {variant === "card" && title && <p className="prompt-cover-lead">{title}</p>}
-      {variant === "tile" && !!lead && <p className="prompt-cover-lead">{lead}</p>}
+      {(variant === "tile" || variant === "mini") && !!lead && <p className="prompt-cover-lead">{lead}</p>}
     </div>
   );
 }

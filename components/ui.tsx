@@ -1,5 +1,5 @@
 "use client";
-// components/ui.tsx — المكوّنات المشتركة: BottomSheet, Toaster, CopyButton, Lightbox, Skeleton, Gallery, Comments, Splash, VarsSheet
+// components/ui.tsx — المكوّنات المشتركة: BottomSheet, Toaster, CopyButton, Lightbox, Skeleton, Gallery, Comments, VarsSheet
 import { AnimatePresence, motion, useDragControls, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { AlertTriangle, CheckCircle, Copy, Flame, Info, Send, Target, X } from "@/components/icons";
 import Link from "next/link";
@@ -639,70 +639,6 @@ export function Comments({ promptId }: { promptId: string }) {
         </button>
       </div>
     </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Splash — شاشة افتتاح خيال
-   ════════════════════════════════════════════════════════════════ */
-export function Splash() {
-  const reduce = useReducedMotion();
-  const [show, setShow] = useState(true);
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem("khiyal:splash")) {
-        setShow(false);
-        return;
-      }
-    } catch {}
-    const t = setTimeout(() => {
-      setShow(false);
-      try {
-        sessionStorage.setItem("khiyal:splash", "1");
-      } catch {}
-    }, Math.max(900, 1600 - performance.now()));
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="splash"
-          id="khiyal-splash"
-          aria-hidden
-          initial={false}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
-          transition={{ duration: reduce ? 0.01 : 0.5, ease: IOS }}
-        >
-          <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
-            animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-            transition={{ duration: reduce ? 0.01 : 0.5, ease: IOS }}
-            className="flex flex-col items-center gap-4"
-          >
-            <span className="brand-mark !h-20 !w-20 !rounded-xl">
-              <img src="/icons/khiyal-mark-192-v5.png" alt="" />
-            </span>
-            <motion.h1
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={{ delay: reduce ? 0 : 0.25, duration: reduce ? 0.01 : 0.5, ease: IOS }}
-              className="text-2xl font-bold text-charcoal"
-            >
-              خيال
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: reduce ? 0 : 0.4, duration: reduce ? 0.01 : 0.5, ease: IOS }}
-              className="text-caption text-smoke"
-            >
-              فكرتك تستحق صياغة أوضح
-            </motion.p>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
 

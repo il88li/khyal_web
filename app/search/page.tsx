@@ -1,251 +1,85 @@
 "use client";
-// app/search/page.tsx — Explore: بحث + Trending Tags + Bento Categories + Remix
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search as SearchIcon, X, TrendingUp, Sparkles, Users, Image as ImageIcon, Code2, PenTool, Zap } from "@/components/icons";
-import { motion, AnimatePresence } from "framer-motion";
-import { sb, explain, thumb, withMeta } from "@/lib/supabase";
-import { Lightbox, Skeleton } from "@/components/ui";
-import { PromptCover } from "@/components/PromptCover";
-import { VerifiedBadge } from "@/components/badges";
+import { Code2, Image as ImageIcon, PenTool, Search as SearchIcon, Sparkles, TrendingUp, Users, X, Zap } from "@/components/icons";
+import PromptCard from "@/components/PromptCard";
+import { EmptyState, ErrorState, Skeleton } from "@/components/states";
+import { explain, sb } from "@/lib/supabase";
 import type { PromptRow } from "@/types";
 
-/* ── الأقسام الأربعة ── */
-type ExploreSection = 
-  | { type: "search" }
-  | { type: "trending-tags"; tags: Tag[] }
-  | { type: "categories"; categories: Category[] }
-  | { type: "remix"; items: PromptRow[] };
-
-interface Tag {
-  id: string;
-  name: string;
-  count: number;
-  trending?: boolean;
-}
-
-interface Category {
-  id: number;
-  name_ar: string;
-  icon: React.ReactNode;
-  color: "warm" | "mint" | "brand" | "gold";
-  count?: number;
-}
-
-/* ── بيانات وهمية للتصميم (تُستبدل ببيانات فعلية من Supabase) ── */
-const MOCK_TRENDING_TAGS: Tag[] = [
-  { id: "1", name: "تصميم UI", count: 234, trending: true },
-  { id: "2", name: "برومبتات صور", count: 189, trending: true },
-  { id: "3", name: "كود بايثون", count: 156 },
-  { id: "4", name: "تسويق رقمي", count: 134, trending: true },
-  { id: "5", name: "كتابة إبداعية", count: 98 },
-  { id: "6", name: "تحليل بيانات", count: 87 },
+const ARABIC_BANK = [
+  { title: "كتابة محتوى عربي", hint: "منشورات، مقالات، ونصوص قريبة من صوتك", icon: PenTool },
+  { title: "صور بهوية عربية", hint: "مشاهد وأفكار بمرجع بصري محلي", icon: ImageIcon },
+  { title: "تسويق ومبيعات", hint: "رسائل واضحة لجمهورك ومنتجك", icon: TrendingUp },
+  { title: "برمجة وتعلّم", hint: "شرح وأمثلة تناسب مستوى القارئ", icon: Code2 },
 ];
 
-const MOCK_CATEGORIES: Category[] = [
-  { id: 1, name_ar: "صور وتصميم", icon: <ImageIcon size={24} />, color: "warm", count: 456 },
-  { id: 2, name_ar: "كتابة ومحتوى", icon: <PenTool size={24} />, color: "mint", count: 234 },
-  { id: 3, name_ar: "برمجة وتطوير", icon: <Code2 size={24} />, color: "brand", count: 189 },
-  { id: 4, name_ar: "تسويق وأعمال", icon: <TrendingUp size={24} />, color: "gold", count: 167 },
-];
-
-const MOCK_REMIX: PromptRow[] = [
-  // ... بيانات برومبتات مفرعة
-];
+type Person = { id: string; display_name: string | null; username: string | null; avatar_url: string | null };
 
 export default function ExplorePage() {
   const [q, setQ] = useState("");
-  const [activeSection, setActiveSection] = useState<string>("all");
+  const [results, setResults] = useState<PromptRow[]>([]);
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [err, setErr] = useState("");
+  const [retry, setRetry] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  
-  useEffect(() => { 
-    if (matchMedia("(pointer: fine)").matches) input.current?.focus(); 
-  }, []);
+  const abort = useRef<AbortController | null>(null);
+
+  useEffect(() => { if (matchMedia("(pointer: fine)").matches) input.current?.focus(); }, []);
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) { abort.current?.abort(); setResults([]); setPeople([]); setSearched(false); setErr(""); return; }
+    const controller = new AbortController(); abort.current?.abort(); abort.current = controller;
+    const timer = window.setTimeout(async () => {
+      setLoading(true); setErr(""); setSearched(true);
+      try {
+        const like = `%${term.replace(/[%_]/g, "\\$&")} %`.replace(" %", "%");
+        const [prompts, profiles] = await Promise.all([
+          sb.from("prompts").select("id,body,enhanced,model,images,like_count,comment_count,created_at,category_id,title,tags,copy_count,fork_count,author:profiles!author_id(id,username,display_name,avatar_url,verified,verification_tier)").or(`title.ilike.${like},body.ilike.${like},enhanced.ilike.${like}`).order("created_at", { ascending: false }).limit(24),
+          sb.from("profiles").select("id,display_name,username,avatar_url").or(`display_name.ilike.${like},username.ilike.${like}`).limit(8),
+        ]);
+        if (controller.signal.aborted) return;
+        if (prompts.error) throw prompts.error;
+        if (profiles.error) throw profiles.error;
+        setResults((prompts.data ?? []) as unknown as PromptRow[]);
+        setPeople((profiles.data ?? []) as Person[]);
+      } catch (e) {
+        if (!controller.signal.aborted) setErr(explain(e));
+      } finally { if (!controller.signal.aborted) setLoading(false); }
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [q, retry]);
 
   return (
-    <main className="explore-page flex flex-col min-h-screen">
-      {/* ══════════════ 1. حقل البحث Sticky ══════════════ */}
-      <div className="sticky top-[var(--top)] z-40 bg-c-bg/95 backdrop-blur-md border-b border-c-line-soft -mx-3 px-3 md:mx-0 md:px-0 py-3">
-        <div className="relative max-w-2xl mx-auto">
+    <main className="explore-page flex min-h-screen flex-col gap-6">
+      <div className="sticky top-[var(--top)] z-40 -mx-3 border-b border-silver bg-fog px-3 py-3 md:mx-0 md:px-0">
+        <div className="relative mx-auto max-w-2xl">
           <SearchIcon size={20} className="absolute start-4 top-1/2 -translate-y-1/2 text-smoke" />
-          <input 
-            ref={input} 
-            value={q} 
-            onChange={(e) => setQ(e.target.value)} 
-            placeholder="ابحث في البرومبتات والأشخاص…" 
-            enterKeyHint="search"
-            className="field !min-h-12 ps-11 pe-12 w-full rounded-full bg-c-snow border-c-line shadow-[var(--sh-1)] focus:shadow-[var(--sh-2)] transition-shadow" 
-          />
-          {q && (
-            <button 
-              onClick={() => { setQ(""); input.current?.focus(); }} 
-              aria-label="مسح" 
-              className="absolute end-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-smoke hover:text-c-ink"
-            >
-              <X size={20} />
-            </button>
-          )}
+          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث عن فكرة أو برومبت أو مبدع…" enterKeyHint="search" className="field w-full rounded-full pe-12 ps-11" />
+          {q && <button onClick={() => { setQ(""); input.current?.focus(); }} aria-label="مسح" className="absolute end-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-smoke"><X size={20} /></button>}
         </div>
       </div>
 
-      <div className="flex flex-col gap-8 py-6 px-3 md:px-0">
-        {/* ══════════════ 2. الوسوم الرائجة (Trending Tags) ══════════════ */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={20} className="text-accent-warm" />
-            <h2 className="font-display text-lg font-bold text-c-ink">الوسوم الرائجة</h2>
-          </div>
-          
-          <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {MOCK_TRENDING_TAGS.map((tag, i) => (
-              <motion.button
-                key={tag.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className={`
-                  flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium
-                  transition-all hover:scale-105 active:scale-95
-                  ${tag.trending 
-                    ? "bg-accent-warm/10 text-accent-warm border border-accent-warm/20" 
-                    : "bg-c-snow text-c-ink-2 border border-c-line"
-                  }
-                `}
-              >
-                {tag.trending && <Zap size={14} />}
-                #{tag.name}
-                <span className="text-caption opacity-70">({tag.count})</span>
-              </motion.button>
-            ))}
-          </div>
+      {!searched && <>
+        <section className="card-flat flex flex-col gap-2 bg-brand-tint p-5">
+          <span className="flex items-center gap-2 text-caption font-semibold text-brand-ink"><Sparkles size={16} /> بنك برومبتات بنكهة عربية</span>
+          <h2 className="text-xl font-bold text-charcoal">ابدأ من مجال يشبه محتواك</h2>
+          <p className="text-sm leading-7 text-graphite">تصفّح أفكاراً عملية ثم استخدم البرومبت مباشرة أو عدّلها بصوتك.</p>
         </section>
-
-        {/* ══════════════ 3. Bento Grid للتصنيفات ══════════════ */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles size={20} className="text-brand" />
-            <h2 className="font-display text-lg font-bold text-c-ink">استكشف حسب المجال</h2>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {MOCK_CATEGORIES.map((cat, i) => {
-              const colorStyles = {
-                warm: "bg-accent-warm/10 text-accent-warm border-accent-warm/20",
-                mint: "bg-accent-mint/10 text-accent-mint-ink border-accent-mint/20",
-                brand: "bg-brand-tint text-brand-ink border-brand/20",
-                gold: "bg-gold-tint text-gold-ink border-gold/20",
-              };
-              
-              return (
-                <motion.button
-                  key={cat.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  whileHover={{ y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    relative overflow-hidden rounded-2xl border p-4 text-start
-                    transition-shadow hover:shadow-[var(--sh-2)]
-                    ${colorStyles[cat.color]}
-                  `}
-                >
-                  <div className="flex flex-col h-full min-h-[100px]">
-                    <span className="mb-auto">{cat.icon}</span>
-                    <div>
-                      <h3 className="font-bold text-base mb-1">{cat.name_ar}</h3>
-                      <p className="text-caption opacity-80">{cat.count} برومبت</p>
-                    </div>
-                  </div>
-                  
-                  {/* زخرفة خلفية */}
-                  <div className="absolute -end-4 -bottom-4 opacity-10">
-                    {cat.icon}
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
+        <section className="grid gap-3 sm:grid-cols-2" aria-label="مجالات عربية">
+          {ARABIC_BANK.map(({ title, hint, icon: Icon }) => <Link key={title} href={`/search?q=${encodeURIComponent(title)}`} className="card card-interactive flex min-h-32 flex-col gap-3 p-4"><Icon size={22} className="text-brand" /><span className="font-semibold text-charcoal">{title}</span><span className="text-sm text-graphite">{hint}</span></Link>)}
         </section>
+      </>}
 
-        {/* ══════════════ 4. الأكثر تفريعًا (Remix) ══════════════ */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users size={20} className="text-accent-mint" />
-              <h2 className="font-display text-lg font-bold text-c-ink">الأكثر تفريعًا هذا الأسبوع</h2>
-            </div>
-            <Link href="/trending" className="text-sm font-medium text-brand hover:text-brand-ink">
-              عرض الكل ←
-            </Link>
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto pb-4 -mx-3 px-3 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
-            {MOCK_REMIX.map((prompt, i) => (
-              <motion.div
-                key={prompt.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="snap-start shrink-0 w-[280px] md:w-[320px]"
-              >
-                <Link href={`/p/${prompt.id}`}>
-                  <div className="card overflow-hidden hover:shadow-[var(--sh-2)] transition-shadow">
-                    {prompt.images?.[0] ? (
-                      <div className="aspect-video relative">
-                        <img 
-                          src={thumb(prompt.images[0].url, 400)} 
-                          alt="" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-3 start-3 end-3">
-                          <p className="text-on-media font-medium line-clamp-1 text-sm">
-                            {prompt.title || "برومبت بدون عنوان"}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-video bg-c-mist flex items-center justify-center">
-                        <PromptCover variant="mini" />
-                      </div>
-                    )}
-                    
-                    <div className="p-3">
-                      <div className="flex items-center gap-2 text-caption text-smoke">
-                        <img 
-                          src={prompt.author?.avatar_url || "/default-avatar.png"} 
-                          alt="" 
-                          className="w-5 h-5 rounded-full"
-                        />
-                        <span className="truncate">{prompt.author?.display_name}</span>
-                        <span className="ms-auto flex items-center gap-1">
-                          <Zap size={12} />
-                          {prompt.fork_count || 0} تفريعة
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+      {loading && <Skeleton variant="promptCard" count={3} />}
+      {!loading && err && <ErrorState message={err} onRetry={() => setRetry((value) => value + 1)} />}
+      {!loading && !err && searched && !results.length && !people.length && <EmptyState icon={SearchIcon} title="لم نجد ما يطابق بحثك" hint="جرّب كلمة أقصر أو ابحث عن مجال مثل كتابة أو تسويق." />}
 
-        {/* نتائج البحث (تظهر عند الكتابة) */}
-        <AnimatePresence>
-          {q.trim().length >= 2 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="min-h-[400px]"
-            >
-              {/* ... نتائج البحث الأصلية */}
-            </motion.section>
-          )}
-        </AnimatePresence>
-      </div>
+      {!loading && !err && people.length > 0 && <section className="flex flex-col gap-3"><h2 className="flex items-center gap-2 text-lg font-bold"><Users size={20} className="text-brand" /> مبدعون</h2><div className="grid gap-2 sm:grid-cols-2">{people.map((person) => <Link key={person.id} href={`/profile/${person.id}`} className="card-flat flex items-center gap-3 p-3"><span className="avatar h-10 w-10" data-i={(person.display_name || person.username || "؟").slice(0, 1)}>{person.avatar_url && <img src={person.avatar_url} alt="" className="h-full w-full object-cover" />}</span><span className="min-w-0"><strong className="block truncate">{person.display_name || person.username || "مبدع خيال"}</strong><span className="text-caption text-smoke">@{person.username || "khiyal"}</span></span></Link>)}</div></section>}
+      {!loading && !err && results.length > 0 && <section className="flex flex-col gap-3"><h2 className="flex items-center gap-2 text-lg font-bold"><Zap size={20} className="text-brand" /> برومبتات مقترحة</h2><div className="flex flex-col gap-4">{results.map((prompt, i) => <PromptCard key={prompt.id} p={prompt} i={i} />)}</div></section>}
     </main>
   );
 }
