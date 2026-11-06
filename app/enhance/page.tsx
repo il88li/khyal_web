@@ -107,12 +107,12 @@ function Enhancer() {
 
   return (
     <main className="flex flex-col gap-4 pb-1" style={{ height: "calc(100dvh - var(--top) - var(--bottom) - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <ol className="flex shrink-0 items-center gap-1.5" aria-label="خطوات تحسين الكتابة">
         {([[1, "اختر"], [2, "خصّص"], [3, "أنشئ"]] as const).map(([n, l]) => (
           <span key={n} className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium ${step === n ? "bg-brand text-snow" : step > n ? "bg-brand-tint text-brand-ink" : "bg-mist text-smoke"}`}>
             <span className={`flex h-4 w-4 items-center justify-center rounded-full text-caption ${step === n ? "bg-snow text-brand-ink" : ""}`}>{n}</span>{l}
           </span>))}
-      </div>
+      </ol>
       {showResult ? (
         <button onClick={() => setEditing(true)} className="flex shrink-0 items-center gap-4 card-flat p-4 text-start">
           <span className="min-w-0 flex-1"><span className="block text-caption text-smoke">النص الأصلي</span><span className="line-clamp-1 text-sm">{text}</span></span>
@@ -128,8 +128,8 @@ function Enhancer() {
         <button onClick={() => { setHist(readHist()); setHistOpen(true); }} aria-label="السجل" className="btn !min-h-10 !px-3"><History size={21} /></button></div>
       </>)}
 
-      <button onClick={busy ? () => ctl.current?.abort() : run} disabled={!busy && !text.trim()}
-        style={{ background: "linear-gradient(180deg, rgb(var(--brand-hi)), rgb(var(--brand-lo)))" }} className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold text-snow shadow-pop active:opacity-80 disabled:bg-mist disabled:text-ash disabled:shadow-none">
+      <button onClick={busy ? () => ctl.current?.abort() : run} disabled={!busy && !text.trim()} aria-busy={busy}
+        className="btn btn-primary flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold active:opacity-80 disabled:bg-mist disabled:text-ash disabled:shadow-none">
         {busy ? <><Square size={19} />إيقاف</> : out && !editing ? <><RefreshCw size={19} />إعادة التوليد</> : "أنشئ النتيجة"}
       </button>
 

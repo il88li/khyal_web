@@ -276,9 +276,9 @@ export default function Feed() {
         <p className="max-w-2xl text-sm leading-7 text-graphite">خيال مساحة عربية تفهم طريقة عمل صانع المحتوى وتساعده على صياغة أفكاره دون تعقيد. ابدأ من فكرة قصيرة، حسّنها بلغة بسيطة، ثم احفظ النسخة التي تناسب جمهورك. واكتشف بنك برومبتات بنكهة عربية من مبدعين يشبهونك.</p>
       </section>
       <header className="feed-tabs-header flex flex-col pb-1 pt-1">
-        <nav className="seg feed-tabs" aria-label="تصفية الفيد">
+        <nav className="seg feed-tabs" aria-label="تصفية الخلاصة" role="tablist">
           {TABS.map(([k, l]) => (
-            <button key={k} data-on={tab === k ? "1" : undefined} onClick={() => setTab(k)} className="relative">
+            <button key={k} type="button" role="tab" aria-selected={tab === k} data-on={tab === k ? "1" : undefined} onClick={() => setTab(k)} className="relative">
               {tab === k && (
                 <motion.span
                   layoutId="feed-tab"
@@ -343,14 +343,14 @@ export default function Feed() {
         {loading && <Skeleton variant="promptCard" count={items.length ? 1 : 3} />}
 
         {!loading && err && (
-          <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <div role="alert" className="flex flex-col items-center gap-4 py-16 text-center">
             <p className="max-w-[30ch] text-graphite">{err}</p>
             <button className="btn btn-primary" onClick={() => load(true)}>إعادة المحاولة</button>
           </div>
         )}
 
         {!loading && !err && !items.length && (
-          <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <div className="flex flex-col items-center gap-4 py-16 text-center" role="status">
             <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-brand-tint text-brand-ink">
               <Sparkles size={26} />
             </span>

@@ -111,7 +111,7 @@ export default function NewPrompt() {
 
         <section aria-label="البرومبت" className="flex flex-col gap-2">
           <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-charcoal">البرومبت</h2><span className="text-sm tabular-nums text-smoke">{text.length}/{LIMIT}</span></div>
-          <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, LIMIT))} rows={8} disabled={busy} placeholder="اكتب البرومبت…" className="field min-h-[200px] w-full resize-none py-3 text-base" />
+          <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, LIMIT))} rows={7} disabled={busy} placeholder="اكتب الفكرة أو البرومبت هنا…" aria-label="نص البرومبت" className="field min-h-[160px] w-full resize-none py-3 text-base" />
         </section>
 
         <div className="flex items-start gap-4 rounded-xl bg-brand-tint p-4 text-brand-ink">
@@ -137,7 +137,7 @@ export default function NewPrompt() {
         </section>
       </>)}
 
-      <div className="sticky bottom-[calc(84px+env(safe-area-inset-bottom))] z-10 -mx-4 bg-fog px-4 pb-2 pt-2">
+      <div className="sticky bottom-[calc(100px+env(safe-area-inset-bottom))] z-10 -mx-4 border-t border-silver/70 bg-fog/95 px-4 pb-3 pt-3 backdrop-blur-sm">
         <button onClick={publish} disabled={busy || !text.trim()} aria-busy={busy} className="btn btn-primary btn-lg w-full">
           {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}{PHASE[phase]}
         </button>
