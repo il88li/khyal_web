@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico", apple: "/icons/khiyal-apple-touch-v5.png" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F7F8FB" }, { media: "(prefers-color-scheme: dark)", color: "#121212" }] };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, maximumScale: 5, userScalable: true, viewportFit: "cover", themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F7F8FB" }, { media: "(prefers-color-scheme: dark)", color: "#121212" }] };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -46,10 +46,11 @@ export default function Library() {
 
   const chip = (on: boolean) => `chip !h-11 shrink-0 border px-3.5 text-base font-semibold ${on ? "border-transparent bg-charcoal text-snow" : "border-silver bg-snow text-graphite"}`;
   return (
-    <main className="flex flex-col gap-4 pt-2">
+    <main className="flex flex-col gap-4 pt-2" aria-labelledby="library-title">
       <div className="relative">
+        <label htmlFor="library-search" className="sr-only">البحث في المكتبة</label>
         <Search size={21} className="absolute start-4 top-1/2 -translate-y-1/2 text-smoke" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في مكتبتك…" className="field !min-h-10 !rounded-full ps-11 pe-4 shadow-soft" />
+        <input id="library-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في مكتبتك…" className="field !min-h-10 !rounded-full ps-11 pe-4 shadow-soft" />
       </div>
       {usedCats.length > 0 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
@@ -65,7 +66,7 @@ export default function Library() {
           <div className="flex flex-col gap-4 pb-4">
             <AnimatePresence initial={false}>
               {list.map((i) => (
-                <motion.article key={i.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                <motion.article key={i.id} aria-label={`عنصر محفوظ: ${i.enhanced.slice(0, 80)}`} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="card flex flex-col gap-4 p-4">
                   <header className="flex items-center justify-between">
                     <span className="chip chip-brand">{cats[i.category_id ?? -1] ?? "عام"}</span>

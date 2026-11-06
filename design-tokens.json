@@ -1,0 +1,42 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "color": {
+    "primary": { "$type": "color", "$value": "#CC1728" },
+    "on-primary": { "$type": "color", "$value": "#FFFFFF" },
+    "primary-hover": { "$type": "color", "$value": "#A00E1E" },
+    "surface": { "$type": "color", "$value": "#FFFFFF" },
+    "surface-page": { "$type": "color", "$value": "#F7F8FB" },
+    "surface-variant": { "$type": "color", "$value": "#EEF0F6" },
+    "on-surface": { "$type": "color", "$value": "#12141C" },
+    "on-surface-variant": { "$type": "color", "$value": "#373B48" },
+    "outline": { "$type": "color", "$value": "#E0E0E0" },
+    "success": { "$type": "color", "$value": "#2E7D32" },
+    "warning": { "$type": "color", "$value": "#925706" },
+    "error": { "$type": "color", "$value": "#B3261E" }
+  },
+  "font": {
+    "family": { "$type": "fontFamily", "$value": "IBM Plex Sans Arabic" },
+    "body": { "$type": "dimension", "$value": "15px" },
+    "body-line-height": { "$type": "number", "$value": 1.7 },
+    "label": { "$type": "dimension", "$value": "13px" },
+    "title": { "$type": "dimension", "$value": "24px" }
+  },
+  "spacing": {
+    "inline-sm": { "$type": "dimension", "$value": "8px" },
+    "inline-md": { "$type": "dimension", "$value": "16px" },
+    "stack-sm": { "$type": "dimension", "$value": "12px" },
+    "stack-md": { "$type": "dimension", "$value": "24px" },
+    "stack-lg": { "$type": "dimension", "$value": "32px" },
+    "touch-target": { "$type": "dimension", "$value": "44px" }
+  },
+  "radius": {
+    "control": { "$type": "dimension", "$value": "12px" },
+    "card": { "$type": "dimension", "$value": "20px" },
+    "sheet": { "$type": "dimension", "$value": "28px" }
+  },
+  "motion": {
+    "quick": { "$type": "duration", "$value": "150ms" },
+    "standard": { "$type": "duration", "$value": "250ms" },
+    "ease-out": { "$type": "cubicBezier", "$value": [0.2, 0, 0, 1] }
+  }
+}

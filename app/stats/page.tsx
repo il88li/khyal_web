@@ -46,13 +46,13 @@ export default function Stats() {
           </div>))}
       </div>
       <BadgeGrid s={badges} />
-      <section className="flex flex-col gap-4 card p-4 shadow-soft">
-        <h2 className="text-lg font-bold text-charcoal">الأفضل أداءً</h2>
+      <section className="flex flex-col gap-4 card p-4" aria-labelledby="top-prompts-title">
+        <h2 id="top-prompts-title" className="text-lg font-bold text-charcoal">الأفضل أداءً</h2>
         {top.map((r) => (
           <Link key={r.id} href={`/p/${r.id}`} className="flex flex-col gap-1.5">
             <span className="line-clamp-1 text-sm">{r.enhanced ?? r.body}</span>
             <span className="h-2 overflow-hidden rounded-full bg-mist"><span className="block h-full rounded-full bg-brand" style={{ width: `${Math.max(6, (score(r) / max) * 100)}%` }} /></span>
-            <span className="text-caption text-smoke">♥ {r.like_count} · 💬 {r.comment_count} · نسخ {r.copy_count ?? 0} · تفريع {r.fork_count ?? 0}</span>
+            <span className="text-caption text-smoke">إعجاب {r.like_count} · تعليق {r.comment_count} · نسخ {r.copy_count ?? 0} · تفريع {r.fork_count ?? 0}</span>
           </Link>))}
       </section>
     </main>
